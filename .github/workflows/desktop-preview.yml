@@ -1,0 +1,42 @@
+name: Desktop portability preview
+on:
+  push:
+    branches: [feature/windows-compatibility]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  apple-silicon:
+    runs-on: macos-15
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+      - name: Publish native Apple Silicon app
+        run: dotnet publish src/TxtReader.Desktop/TxtReader.Desktop.csproj -c Release -r osx-arm64 --self-contained true -p:PublishTrimmed=false -p:RestoreLockedMode=true -o artifacts/mac-publish
+      - name: Run native UI and fresh-process reading checks
+        shell: pwsh
+        run: ./scripts/verify-desktop-cross.ps1 -Executable ./artifacts/mac-publish/Qidu -ReportDirectory ./artifacts/mac-report
+      - name: Create and verify development bundle
+        run: python3 scripts/package-macos.py --publish artifacts/mac-publish --output artifacts/mac-package --report artifacts/mac-report/report.json
+      - name: Reopen progress using the packaged app
+        run: '"artifacts/mac-package/栖读.app/Contents/MacOS/Qidu" --resume-test "$PWD/artifacts/mac-report" --data-dir "$PWD/artifacts/mac-report/library"'
+      - name: Preserve preview and validation
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: macOS-arm64-preview
+          path: |
+            artifacts/mac-package/*.zip
+            artifacts/mac-package/*.txt
+            artifacts/mac-package/package-receipt.json
+            artifacts/mac-report/report.json
+            artifacts/mac-report/resume-report.json
+            artifacts/mac-report/*.png
+          if-no-files-found: ignore
+          retention-days: 14

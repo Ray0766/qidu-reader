@@ -8,6 +8,7 @@ dist/
 /TXT Reader/
 # Personal books placed at the project root are never source files.
 /*.txt
+/*.epub
 *.pfx
 *.p12
 *.key

@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <RuntimeIdentifiers>win-x64;osx-arm64</RuntimeIdentifiers>
+    <AssemblyName>Qidu</AssemblyName>
+    <RootNamespace>Qidu.Desktop</RootNamespace>
+    <Version>0.2.0</Version>
+    <InformationalVersion>0.2.0-preview.2</InformationalVersion>
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+    <AvaloniaUseCompiledBindingsByDefault>false</AvaloniaUseCompiledBindingsByDefault>
+    <ApplicationIcon>..\TxtReader.App\Assets\AppIcon.ico</ApplicationIcon>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\TxtReader.Core\TxtReader.Core.csproj" />
+    <PackageReference Include="Avalonia.Desktop" Version="12.1.4" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.4" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.13" />
+    <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="3.0.5" />
+    <Compile Include="..\TxtReader.App\SessionStore.cs" Link="Shared\SessionStore.cs" />
+    <Compile Include="..\TxtReader.App\LibraryService.cs" Link="Shared\LibraryService.cs" />
+    <Content Include="..\..\samples\山海来信.txt" Link="samples\sample-novel.txt" CopyToOutputDirectory="PreserveNewest" />
+    <AvaloniaResource Include="..\TxtReader.App\Assets\AppIcon.png" Link="Assets\AppIcon.png" />
+  </ItemGroup>
+</Project>

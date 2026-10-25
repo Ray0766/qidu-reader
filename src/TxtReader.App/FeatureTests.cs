@@ -30,7 +30,7 @@ internal static class FeatureTests
             found = await BookSearch.FindPageAsync(repeated, "林舟", cursor);
             offsets.AddRange(found.Hits.Select(x => x.Offset)); cursor = found.NextOffset;
         } while (found.HasMore);
-        Check(offsets.Count == 451 && offsets.Distinct().Count() == 451 && offsets.SequenceEqual(offsets.Order()), "all 451 search results reachable without duplicates");
+        Check(offsets.Count == 451 && offsets.Distinct().Count() == 451 && offsets.SequenceEqual(offsets.OrderBy(x => x)), "all 451 search results reachable without duplicates");
         Check((await BookSearch.FindPageAsync(repeated, "舟")).Hits.Count == 200, "single Chinese character search");
         Check((await BookSearch.FindPageAsync(repeated, "从未出现的片段")).Hits.Count == 0, "no-match full book search");
         using (var cancellation = new CancellationTokenSource())
@@ -67,10 +67,10 @@ internal static class FeatureTests
         string fixtures = Path.Combine(folder, "imports");
         Directory.CreateDirectory(fixtures);
         string firstPath = Path.Combine(fixtures, "第一本.txt"), aliasPath = Path.Combine(fixtures, "同内容别名.txt"), secondPath = Path.Combine(fixtures, "第二本.txt");
-        string demoText = await File.ReadAllTextAsync(LibraryService.DemoPath);
-        await File.WriteAllTextAsync(firstPath, demoText, new UTF8Encoding(false));
-        await File.WriteAllTextAsync(aliasPath, demoText, new UTF8Encoding(true));
-        await File.WriteAllTextAsync(secondPath, "第二本的开篇\n" + demoText + demoText, new UTF8Encoding(false));
+        string demoText = await RuntimeCompat.ReadAllTextAsync(LibraryService.DemoPath);
+        await RuntimeCompat.WriteAllTextAsync(firstPath, demoText, new UTF8Encoding(false));
+        await RuntimeCompat.WriteAllTextAsync(aliasPath, demoText, new UTF8Encoding(true));
+        await RuntimeCompat.WriteAllTextAsync(secondPath, "第二本的开篇\n" + demoText + demoText, new UTF8Encoding(false));
         var batch = await window.ImportFilesAsync([firstPath, aliasPath, secondPath, Path.Combine(fixtures, "missing.txt")]);
         Check(batch.Imported == 2 && batch.Duplicates == 1 && batch.Failures.Count == 1 && window.Store.ListBooks().Count == 2,
             "batch imports deduplicate and report individual failures", batch);

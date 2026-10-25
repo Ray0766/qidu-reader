@@ -22,6 +22,18 @@ internal static class PrototypeTests
             File.WriteAllText(Path.Combine(folder, "in-progress.json"), JsonSerializer.Serialize(checks, new JsonSerializerOptions { WriteIndented = true }));
             if (!ok) throw new InvalidOperationException(name);
         }
+        if (window.EpubOnly)
+        {
+            try { await EpubTests.RunAsync(window, folder, Check); }
+            catch (Exception error) { failure = error.ToString(); }
+            File.WriteAllText(Path.Combine(folder, "report.json"), JsonSerializer.Serialize(new
+            {
+                passed = failure is null, timestamp = DateTimeOffset.Now, os = Environment.OSVersion.ToString(),
+                framework = System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription, checks, timings, failure
+            }, new JsonSerializerOptions { WriteIndented = true }));
+            Application.Current.Shutdown(failure is null ? 0 : 1);
+            return;
+        }
         try
         {
             var dpi = DesktopProbe.Dpi(window);
@@ -115,7 +127,7 @@ internal static class PrototypeTests
             using (var reopened = new SessionStore(Path.Combine(folder, "persistence")))
             {
                 var saved = reopened.Read(navigationBook.ContentId)!;
-                await reader.OpenAsync(navigationBook, saved.Offset, Enum.Parse<ReadingMode>(saved.Mode), saved.FontSize);
+                await reader.OpenAsync(navigationBook, saved.Offset, (ReadingMode)Enum.Parse(typeof(ReadingMode), saved.Mode), saved.FontSize);
                 Check(reader.Anchor == target && reader.Snapshot().AnchorVisible && reader.ReadingFontSize == 28, "SQLite reopen resumes visible content", reader.Snapshot());
             }
 
@@ -151,6 +163,7 @@ internal static class PrototypeTests
         {
             try
             {
+                await CompatibilityTests.RunAsync(folder, Check);
                 await MigrationTests.RunAsync(folder, Check);
                 await FeatureTests.RunAsync(window, folder, Check, timings);
                 await SpreadTests.RunAsync(window, Check);
@@ -158,6 +171,7 @@ internal static class PrototypeTests
                 await NavigationInputTests.RunAsync(window, Check);
                 await BodyDragTests.RunAsync(window, folder, Check);
                 await ChapterFollowTests.RunAsync(window, folder, Check);
+                await EpubTests.RunAsync(window, folder, Check);
             }
             catch (Exception ex) { failure = ex.ToString(); }
         }

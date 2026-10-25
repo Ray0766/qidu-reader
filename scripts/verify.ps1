@@ -1,4 +1,4 @@
-param([string]$Executable, [string]$ReportDirectory, [string]$TestBook, [double]$ExpectedDpiScale)
+param([string]$Executable, [string]$ReportDirectory, [string]$TestBook, [double]$ExpectedDpiScale, [string]$TestEpub, [switch]$EpubOnly)
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot
 if (!$Executable) { $Executable = Join-Path $projectRoot 'src\TxtReader.App\bin\Release\net10.0-windows\TxtReader.exe' }
@@ -11,6 +11,8 @@ if ((Test-Path -LiteralPath $ReportDirectory) -and (Get-ChildItem -LiteralPath $
 New-Item -ItemType Directory -Path $ReportDirectory -Force | Out-Null
 $testArguments = @('--self-test', ('"' + $ReportDirectory + '"'))
 if ($TestBook) { $testArguments += @('--test-book', ('"' + (Resolve-Path -LiteralPath $TestBook).Path + '"')) }
+if ($TestEpub) { $testArguments += @('--test-epub', ('"' + (Resolve-Path -LiteralPath $TestEpub).Path + '"')) }
+if ($EpubOnly) { $testArguments += '--epub-only' }
 if ($ExpectedDpiScale) { $testArguments += @('--expect-dpi', $ExpectedDpiScale.ToString([Globalization.CultureInfo]::InvariantCulture)) }
 $testProcess = Start-Process -FilePath $Executable -ArgumentList $testArguments -WindowStyle Hidden -PassThru
 $testProcess.WaitForExit()

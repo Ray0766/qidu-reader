@@ -9,7 +9,7 @@ public sealed record ReadingSession(string BookId, string Path, int Offset, stri
 public sealed record ShelfBook(string BookId, string Title, string Path, string EncodingName, int Length,
     int Offset, string LastRead, bool HasRead)
 {
-    public double Progress => Math.Clamp(Offset * 100d / Math.Max(1, Length - 1), 0, 100);
+    public double Progress => RuntimeCompat.Clamp(Offset * 100d / Math.Max(1, Length - 1), 0, 100);
     public string ProgressText => !HasRead ? "未开始" : Length == 0 ? "已读过" : $"已读 {Progress:F1}%";
     public string Detail => $"{EncodingName}    {(Length > 0 ? $"{Length:N0} 字符" : "打开后更新字数")}";
     public string LastReadText => HasRead && DateTimeOffset.TryParse(LastRead, out var time)

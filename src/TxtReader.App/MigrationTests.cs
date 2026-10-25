@@ -9,12 +9,12 @@ internal static class MigrationTests
     internal static async Task RunAsync(string folder, Action<bool, string, object?> check)
     {
         void Check(bool value, string name) => check(value, "library migration: " + name, null);
-        Check(Path.IsPathFullyQualified(LibraryLocation.PhysicalLocalAppData) &&
+        Check(WindowsCompat.IsPathFullyQualified(LibraryLocation.PhysicalLocalAppData) &&
             !LibraryLocation.PhysicalLocalAppData.Contains("\\Packages\\", StringComparison.OrdinalIgnoreCase), "legacy lookup resolves original user AppData");
         string source = Path.Combine(folder, "migration-source");
         string target = Path.Combine(folder, "migration-target");
-        string input = Path.Combine(folder, "迁移测试.txt");
-        await File.WriteAllTextAsync(input, "第一章 纸上星光\n" + new string('书', 4000));
+        string input = Path.Combine(folder, "迁移 #100% 🙂.txt");
+        await RuntimeCompat.WriteAllTextAsync(input, "第一章 纸上星光\n" + new string('书', 4000));
         using (var original = new SessionStore(source))
         {
             var book = await new LibraryService(original).ImportAsync(input);
@@ -28,7 +28,7 @@ internal static class MigrationTests
             Check(LibraryLocation.Prepare(source, target) == target, "WAL snapshot succeeds with source connection open");
             using var migrated = new SessionStore(target);
             var restored = migrated.Read()!;
-            Check(restored == session with { Path = Path.Combine(target, Path.GetRelativePath(source, session.Path)) }, "exact book ID, anchor, mode, font and encoding survive");
+            Check(restored == session with { Path = Path.Combine(target, WindowsCompat.GetRelativePath(source, session.Path)) }, "exact book ID, anchor, mode, font and encoding survive");
             Check(File.ReadAllBytes(restored.Path).SequenceEqual(File.ReadAllBytes(session.Path)), "managed Chinese filename and book bytes survive");
             Check(migrated.ListBooks().Single().Title == "保留我的书名", "renamed shelf title survives");
             Check(migrated.ListBookmarks(restored.BookId).Single().Offset == 1200, "bookmark survives");

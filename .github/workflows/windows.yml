@@ -37,3 +37,35 @@ jobs:
             artifacts/ci-report/in-progress.json
           if-no-files-found: ignore
           retention-days: 14
+
+  compatibility:
+    runs-on: windows-2025
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        architecture: [x64, x86]
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+      - name: Build .NET Framework compatibility preview
+        run: ./scripts/build-compat.ps1 -Architecture ${{ matrix.architecture }} -OutputDirectory ./artifacts/compat-publish
+      - name: Check reading and persistence on the runner (not an old Windows verification)
+        run: ./scripts/verify.ps1 -Executable ./artifacts/compat-publish/TxtReader.exe -ReportDirectory ./artifacts/compat-report
+      - name: Preserve compatibility report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: compatibility-${{ matrix.architecture }}
+          path: |
+            artifacts/compat-report/report.json
+            artifacts/compat-report/in-progress.json
+          if-no-files-found: ignore
+          retention-days: 14

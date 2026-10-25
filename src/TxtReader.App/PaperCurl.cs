@@ -17,7 +17,7 @@ internal sealed class PaperCurl
 
     public PaperCurl(double width, double height, double gripY, Point target)
     {
-        var corner = new Point(width, Math.Clamp(gripY, 0, height));
+        var corner = new Point(width, RuntimeCompat.Clamp(gripY, 0, height));
         var nearHinge = new Point(0, 0);
         var farHinge = new Point(0, height);
         for (int i = 0; i < 8; i++)
@@ -76,8 +76,8 @@ internal static class PageDragMath
 
     // Same distance at every press location, measured in DIPs. Wide monitors must
     // not require dragging the pointer across the entire screen to turn one page.
-    internal static double Travel(double width, int pages) => 2 * Math.Clamp(width / pages * .35, 60, 180);
+    internal static double Travel(double width, int pages) => 2 * RuntimeCompat.Clamp(width / pages * .35, 60, 180);
 
     internal static double Progress(Point start, Point current, double travel, int direction) =>
-        Math.Clamp(direction * (start.X - current.X) / Math.Max(1, travel), 0, 1);
+        RuntimeCompat.Clamp(direction * (start.X - current.X) / Math.Max(1, travel), 0, 1);
 }

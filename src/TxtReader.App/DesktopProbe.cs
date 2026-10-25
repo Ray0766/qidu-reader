@@ -22,6 +22,9 @@ internal static class DesktopProbe
         string Action, int ProcessId, DpiEvidence Dpi);
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
     [DllImport("user32.dll")] private static extern uint GetDpiForWindow(nint hwnd);
+    [DllImport("user32.dll")] private static extern nint GetDC(nint hwnd);
+    [DllImport("user32.dll")] private static extern int ReleaseDC(nint hwnd, nint hdc);
+    [DllImport("gdi32.dll")] private static extern int GetDeviceCaps(nint hdc, int index);
     [DllImport("user32.dll")] private static extern nint GetForegroundWindow();
     [DllImport("user32.dll")] private static extern uint GetWindowThreadProcessId(nint hwnd, out uint processId);
     private static string? Option(string[] args, string name)
@@ -33,9 +36,20 @@ internal static class DesktopProbe
     internal static DpiEvidence Dpi(Window window)
     {
         string? expected = Option(Environment.GetCommandLineArgs(), "--expect-dpi");
-        return new(VisualTreeHelper.GetDpi(window).DpiScaleX, GetDpiForWindow(new WindowInteropHelper(window).Handle),
-            expected is null ? null : double.Parse(expected, CultureInfo.InvariantCulture), Environment.ProcessId,
+        return new(VisualTreeHelper.GetDpi(window).DpiScaleX, NativeDpi(new WindowInteropHelper(window).Handle),
+            expected is null ? null : double.Parse(expected, CultureInfo.InvariantCulture), WindowsCompat.ProcessId,
             window.ActualWidth, window.ActualHeight, SystemParameters.WorkArea.Width, SystemParameters.WorkArea.Height);
+    }
+    private static uint NativeDpi(nint window)
+    {
+        try { return GetDpiForWindow(window); }
+        catch (EntryPointNotFoundException)
+        {
+            nint dc = GetDC(window);
+            if (dc == 0) throw new InvalidOperationException("无法读取窗口 DPI。");
+            try { return checked((uint)GetDeviceCaps(dc, 88)); }
+            finally { ReleaseDC(window, dc); }
+        }
     }
     private static void Write(string folder, string file, object value) =>
         File.WriteAllText(Path.Combine(folder, file), JsonSerializer.Serialize(value, JsonOptions));
@@ -70,7 +84,7 @@ internal static class DesktopProbe
             {
                 shown = true;
                 target.Show(); target.Activate();
-                Write(folder, "focus-shown.json", new { pid = Environment.ProcessId, active = target.IsActive, foreground = ForegroundProcess() });
+                Write(folder, "focus-shown.json", new { pid = WindowsCompat.ProcessId, active = target.IsActive, foreground = ForegroundProcess() });
             }
         };
         // Allocate the HWND, layout and render resources before the timed interruption.
@@ -84,7 +98,7 @@ internal static class DesktopProbe
             target.Hide();
             target.ShowActivated = true;
             timer.Start();
-            Write(folder, "focus-ready.json", new { pid = Environment.ProcessId });
+            Write(folder, "focus-ready.json", new { pid = WindowsCompat.ProcessId });
         }, DispatcherPriority.ContextIdle);
         return true;
     }
@@ -100,7 +114,7 @@ internal static class DesktopProbe
         var initialDpi = Dpi(window);
         var checks = new List<object>();
         var events = new List<object>();
-        var closed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var closed = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
         bool finished = false;
         var clock = Stopwatch.StartNew();
         void Check(bool ok, string name, object? detail = null)
@@ -119,14 +133,14 @@ internal static class DesktopProbe
         window.Deactivated += (_, _) => Event("Deactivated");
         window.StateChanged += (_, _) => Event("StateChanged");
         window.Closing += (_, _) => Event("Closing");
-        window.Closed += (_, _) => { Event("Closed"); closed.TrySetResult(); };
+        window.Closed += (_, _) => { Event("Closed"); closed.TrySetResult(true); };
         async Task FinishAsync(Exception? error = null)
         {
             if (finished) return;
             finished = true;
             File.WriteAllText(Path.Combine(folder, "focus-stop.signal"), "stop");
             Write(folder, args.Contains("--desktop-resume") ? "resume-report.json" : "report.json",
-                new { passed = error is null, processId = Environment.ProcessId, dpi = initialDpi, checks, events, error = error?.ToString() });
+                new { passed = error is null, processId = WindowsCompat.ProcessId, dpi = initialDpi, checks, events, error = error?.ToString() });
             if (!closed.Task.IsCompleted) { window.Close(); await closed.Task.WaitAsync(TimeSpan.FromSeconds(5)); }
             Application.Current.Shutdown(error is null ? 0 : 1);
         }
@@ -138,7 +152,7 @@ internal static class DesktopProbe
             if (args.Contains("--desktop-resume"))
             {
                 var baseline = JsonSerializer.Deserialize<Baseline>(File.ReadAllText(Path.Combine(folder, "baseline.json")))!;
-                Check(baseline.ProcessId != Environment.ProcessId, "resume is a fresh process");
+                Check(baseline.ProcessId != WindowsCompat.ProcessId, "resume is a fresh process");
                 Check(reader.Book?.ContentId == baseline.BookId && reader.Anchor == baseline.Anchor && reader.Snapshot().AnchorVisible &&
                     reader.Book.Excerpt(reader.Anchor) == baseline.Excerpt && reader.ReadingFontSize == baseline.FontSize,
                     "fresh process restores exact source position, text and font", reader.Snapshot());
@@ -160,13 +174,13 @@ internal static class DesktopProbe
             await reader.FlushPendingInputAsync();
             window.SavePosition(true);
             var before = new Baseline(reader.Book.ContentId, anchor, reader.Book.Excerpt(anchor), reader.ReadingFontSize,
-                layout, action, Environment.ProcessId, Dpi(window));
+                layout, action, WindowsCompat.ProcessId, Dpi(window));
             Write(folder, "baseline.json", before);
             Capture(reader, folder, "before.png");
             ProcessStartInfo FocusProcess()
             {
-                var start = new ProcessStartInfo(Environment.ProcessPath!) { UseShellExecute = false, CreateNoWindow = true, WindowStyle = ProcessWindowStyle.Hidden };
-                start.ArgumentList.Add("--focus-receiver"); start.ArgumentList.Add(folder);
+                var start = new ProcessStartInfo(WindowsCompat.ProcessPath!) { UseShellExecute = false, CreateNoWindow = true, WindowStyle = ProcessWindowStyle.Hidden };
+                start.Arguments = "--focus-receiver " + WindowsCompat.QuoteArgument(folder);
                 return start;
             }
             if (action == "deactivate" && phase != "mouse")
@@ -193,7 +207,7 @@ internal static class DesktopProbe
                         "interruption begins with actual mouse held and captured");
                     else Check(reader.CornerDragActive && reader.DragPreviewReady && reader.DragProgress >= .5,
                         "programmatic gesture reaches requested asynchronous phase");
-                    if (action == "deactivate") Check(window.IsActive && ForegroundProcess() == Environment.ProcessId,
+                    if (action == "deactivate") Check(window.IsActive && ForegroundProcess() == WindowsCompat.ProcessId,
                         "reader owns foreground before focus interruption");
                     Write(folder, "trigger.json", new { phase, nativeInput, button = Mouse.LeftButton.ToString(), capture = reader.IsMouseCaptureWithin,
                         reader.CornerDragActive, reader.DragPreviewReady, reader.DragProgress, reader.Anchor, dpi = Dpi(window), foreground = ForegroundProcess() });
@@ -221,7 +235,7 @@ internal static class DesktopProbe
                     if (action == "deactivate")
                     {
                         if (nativeInput) Check(!window.IsActive && focusWindow!.IsActive, "held-mouse focus moved to another real window");
-                        else Check(!window.IsActive && ForegroundProcess() != Environment.ProcessId && File.Exists(Path.Combine(folder, "focus-shown.json")),
+                        else Check(!window.IsActive && ForegroundProcess() != WindowsCompat.ProcessId && File.Exists(Path.Combine(folder, "focus-shown.json")),
                             "foreground really moved to another process", ForegroundProcess());
                     }
                     using (var saved = new SessionStore(window.Store.Folder))

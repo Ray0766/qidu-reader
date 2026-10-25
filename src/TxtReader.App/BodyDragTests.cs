@@ -58,7 +58,10 @@ internal static class BodyDragTests
                     reader.MovePagePointer(Pull(start, direction, .49));
                     await reader.WaitForDragPreviewAsync();
                     Check(reader.DragPreviewReady && reader.Anchor == original && events == 0 && Math.Abs(reader.DragProgress - .49) < .001,
-                        "all locations share the same threshold and preview cannot commit");
+                        "all locations share the same threshold and preview cannot commit",
+                        new { snapshot = reader.Snapshot(), reader.DragPreviewReady, reader.DragProgress, events,
+                            window.IsActive, notice = window.Notice.Text,
+                            memory = System.Diagnostics.Process.GetCurrentProcess().PrivateMemorySize64 });
                     await reader.EndPagePointerAsync(Pull(start, direction, .49));
                     Check(reader.Anchor == original && events == 0 && !reader.IsBusy && reader.Snapshot().AnchorVisible,
                         "short body pull rebounds and preserves the source anchor");
@@ -124,7 +127,7 @@ internal static class BodyDragTests
             if (phase != "pending") await reader.WaitForDragPreviewAsync();
             Task settling = phase == "settling" ? reader.EndPagePointerAsync(end) : Task.CompletedTask;
             if (instantRelease)
-                Check(settling.IsCompletedSuccessfully && reader.Anchor == expectedAnchor && !reader.CornerDragActive,
+                Check(settling.Status == TaskStatus.RanToCompletion && reader.Anchor == expectedAnchor && !reader.CornerDragActive,
                     "system animation disabled: prepared release commits before the next operation");
             switch (operation)
             {

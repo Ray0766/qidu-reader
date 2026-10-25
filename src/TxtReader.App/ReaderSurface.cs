@@ -4,6 +4,7 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Documents;
 using System.Windows.Markup;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using TxtReader.Core;
 
@@ -24,6 +25,7 @@ public sealed partial class ReaderSurface : Grid
     private readonly PageTurnLayer _turnLayer;
     private readonly RichTextBox _scroll;
     private readonly List<RunMap> _runs = [];
+    private readonly Dictionary<BookImage, BitmapSource> _imageCache = new();
     private readonly DispatcherTimer _resizeTimer;
     private readonly SemaphoreSlim _layoutGate = new(1, 1);
     private readonly SemaphoreSlim _operationGate = new(1, 1);
@@ -49,9 +51,10 @@ public sealed partial class ReaderSurface : Grid
     internal bool AnimationLayerVisible => _turnLayer.Visibility == Visibility.Visible;
     internal bool PageViewsReady => _leftPage.DocumentPage != DocumentPage.Missing &&
         (VisiblePages == 1 || _pageIndex + 1 >= (_paginator?.PageCount ?? 0) || _rightPage.DocumentPage != DocumentPage.Missing);
+    internal int RenderedIllustrations => _runs.Count(x => x.Run is BlockUIContainer { Child: Image { Source: BitmapSource } });
     public event EventHandler? PositionChanged;
 
-    private sealed record RunMap(Run Run, int Start, int Length);
+    private sealed record RunMap(TextElement Run, int Start, int Length);
 
     public ReaderSurface()
     {
@@ -109,10 +112,11 @@ public sealed partial class ReaderSurface : Grid
     public Task OpenAsync(BookDocument book, int offset = 0, ReadingMode mode = ReadingMode.Page, double fontSize = 22) => ChangeAsync(async () =>
     {
         _book = book;
+        _imageCache.Clear();
         _highlightStart = -1;
         _highlightLength = 0;
         _anchor = book.ClampOffset(offset);
-        ReadingFontSize = Math.Clamp(fontSize, 14, 36);
+        ReadingFontSize = RuntimeCompat.Clamp(fontSize, 14, 36);
         Mode = mode;
         _scrollAnchorY = 24;
         await RebuildAsync();
@@ -128,14 +132,14 @@ public sealed partial class ReaderSurface : Grid
 
     public Task SetFontAsync(double size) => ChangeAsync(async () =>
     {
-        ReadingFontSize = Math.Clamp(size, 14, 36);
+        ReadingFontSize = RuntimeCompat.Clamp(size, 14, 36);
         _scrollAnchorY = 24;
         await RebuildAsync();
     });
 
     public Task AdjustFontAsync(double delta) => ChangeAsync(async () =>
     {
-        ReadingFontSize = Math.Clamp(ReadingFontSize + delta, 14, 36);
+        ReadingFontSize = RuntimeCompat.Clamp(ReadingFontSize + delta, 14, 36);
         _scrollAnchorY = 24;
         await RebuildAsync();
     });
@@ -302,6 +306,35 @@ public sealed partial class ReaderSurface : Grid
         for (int i = from; i < last.FirstBlock + last.BlockCount; i++)
         {
             var block = book.Blocks[i];
+            if (block.Image is { } artwork)
+            {
+                FrameworkElement content;
+                try
+                {
+                    if (!_imageCache.TryGetValue(artwork, out var bitmap))
+                    {
+                        bitmap = BookArtwork.Decode(artwork.Data);
+                        if (_imageCache.Count >= 8) _imageCache.Remove(_imageCache.Keys.First());
+                        _imageCache.Add(artwork, bitmap);
+                    }
+                    double availableWidth = Math.Max(60, ActualWidth / (Mode == ReadingMode.Page ? VisiblePages : 1) - 72);
+                    double availableHeight = Math.Max(60, ActualHeight - 80);
+                    double ratio = Math.Min(availableWidth / bitmap.PixelWidth, availableHeight / bitmap.PixelHeight);
+                    content = new Image { Source = bitmap, Stretch = Stretch.Uniform,
+                        Width = bitmap.PixelWidth * ratio, Height = bitmap.PixelHeight * ratio,
+                        HorizontalAlignment = HorizontalAlignment.Center };
+                    System.Windows.Automation.AutomationProperties.SetName(content, "书内插图");
+                }
+                catch (Exception error) when (error is System.IO.IOException or NotSupportedException or ArgumentException)
+                { content = new TextBlock { Text = "这幅插图暂无法显示", Margin = new Thickness(12), TextAlignment = TextAlignment.Center }; }
+                var imageBlock = new BlockUIContainer(content) { Margin = new Thickness(0, 4, 0, 4),
+                    BreakPageBefore = Mode == ReadingMode.Page && hasVisibleContent };
+                document.Blocks.Add(imageBlock);
+                maps.Add(new(imageBlock, block.Start, block.Length));
+                paragraph = null;
+                hasVisibleContent = true;
+                continue;
+            }
             if (!block.Continuation || paragraph is null)
             {
                 paragraph = new Paragraph
@@ -309,7 +342,7 @@ public sealed partial class ReaderSurface : Grid
                     Margin = new Thickness(0, 0, 0, block.Length == 0 ? 0 : ReadingFontSize * .5),
                     TextIndent = !block.Heading && !block.Continuation && block.Length > 0 && !char.IsWhiteSpace(book.Text[block.Start]) ? ReadingFontSize * 2 : 0,
                     KeepTogether = false, KeepWithNext = block.Heading,
-                    BreakPageBefore = Mode == ReadingMode.Page && block.Heading && hasVisibleContent,
+                    BreakPageBefore = Mode == ReadingMode.Page && (block.Heading || block.PageBreakBefore) && hasVisibleContent,
                     LineHeight = block.Length == 0 ? ReadingFontSize * .6 : ReadingFontSize * 1.85
                 };
                 if (block.Heading)
@@ -351,7 +384,7 @@ public sealed partial class ReaderSurface : Grid
         foreach (var map in _runs)
         {
             if (offset <= map.Start + map.Length)
-                return map.Run.ContentStart.GetPositionAtOffset(Math.Clamp(offset - map.Start, 0, map.Length), LogicalDirection.Forward);
+                return map.Run is Run ? map.Run.ContentStart.GetPositionAtOffset(RuntimeCompat.Clamp(offset - map.Start, 0, map.Length), LogicalDirection.Forward) : map.Run.ContentStart;
         }
         return _runs.LastOrDefault()?.Run.ContentEnd;
     }
@@ -363,7 +396,7 @@ public sealed partial class ReaderSurface : Grid
         {
             if (pointer.CompareTo(map.Run.ContentStart) <= 0) return map.Start;
             if (pointer.CompareTo(map.Run.ContentEnd) <= 0)
-                return map.Start + Math.Clamp(map.Run.ContentStart.GetOffsetToPosition(pointer), 0, map.Length);
+                return map.Run is Run ? map.Start + RuntimeCompat.Clamp(map.Run.ContentStart.GetOffsetToPosition(pointer), 0, map.Length) : map.Start;
         }
         return _runs.Count > 0 ? _runs[^1].Start + _runs[^1].Length : _anchor;
     }

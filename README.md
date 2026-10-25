@@ -8,6 +8,8 @@
 
 **[下载 Windows 安装版](https://github.com/Ray0766/qidu-reader/releases/download/v0.1.9/TXT-Reader-0.1.9-Setup-x64.exe)** · [便携 ZIP](https://github.com/Ray0766/qidu-reader/releases/download/v0.1.9/TxtReader-0.1.9-win-x64.zip) · [所有版本](https://github.com/Ray0766/qidu-reader/releases)
 
+开发分支正在准备 **0.2.0 预览**：新增 EPUB 2/3 图文阅读、Windows 7 SP1／8.1 兼容构建，以及苹果 M 系列 Mac 界面。它们不是上面 0.1.9 安装包已有的功能；Mac 最低目标为 macOS 15，旧 Windows 的实机验证仍待完成。范围与验证状态见 [跨平台预览说明](docs/portability-preview.md)。
+
 Microsoft Store 申请已于 2026-10-25 提交认证，正式商店下载尚待上架后验证。
 
 ![纸张双页阅读](installer/msix/store-materials/screenshots-v019/02-double-page.png)
@@ -62,7 +64,7 @@ Microsoft Store 申请已于 2026-10-25 提交认证，正式商店下载尚待�
 
 单文件上限 150 MiB，完整文本仍载入内存、排版分段加载。双页遇到内容分段末尾可能有一页空白，继续翻页即可接着读。“位置保留”保证同一原文锚点仍可见，页码和页边界随排版变化。章节起页依赖标题识别。
 
-当前面向 Windows 11 x64，未提供 ARM64、macOS、Linux 或手机版。备份恢复界面、封面图片导入、云同步和直装版自动更新尚未实现。纸页动效是曲面视觉近似；软件渲染设备和系统动画设置会影响效果。
+已发布的 0.1.9 面向 Windows 11 x64。Mac 与旧 Windows 的新增工作见上方预览说明；Linux、Windows ARM64 和手机版尚未提供。备份恢复界面、手动封面图片导入、云同步和直装版自动更新尚未实现。纸页动效是曲面视觉近似；软件渲染设备和系统动画设置会影响效果。
 
 0.1.9 已通过 1,199 项阅读回归、独立 MSIX 升级／卸载重装、干净 Windows 安装以及日常旧库迁移验证。详细范围与限制见 [验证说明](docs/validation.md)。
 

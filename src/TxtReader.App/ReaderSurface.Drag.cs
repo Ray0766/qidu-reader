@@ -88,7 +88,7 @@ public sealed partial class ReaderSurface
 
     internal void MovePagePointer(Point point)
     {
-        if (_pagePress is not { } start || !double.IsFinite(point.X) || !double.IsFinite(point.Y)) return;
+        if (_pagePress is not { } start || !RuntimeCompat.IsFinite(point.X) || !RuntimeCompat.IsFinite(point.Y)) return;
         var delta = point - start;
         _pagePressMoved |= delta.Length >= 6;
         if (_drag is null && Math.Abs(delta.X) >= 6 && Math.Abs(delta.X) >= Math.Abs(delta.Y))
@@ -142,7 +142,7 @@ public sealed partial class ReaderSurface
     internal void UpdateCornerDrag(Point point)
     {
         var drag = _drag;
-        if (drag is null || drag.Released || drag.Settling || !double.IsFinite(point.X) || !double.IsFinite(point.Y)) return;
+        if (drag is null || drag.Released || drag.Settling || !RuntimeCompat.IsFinite(point.X) || !RuntimeCompat.IsFinite(point.Y)) return;
         drag.Pointer = point;
         if (drag.Preparation is null && (point - drag.Start).Length >= 6) drag.Preparation = PrepareDragAsync(drag);
         if (drag.Candidate is not null) _turnLayer.UpdateDrag(point);
@@ -223,7 +223,7 @@ public sealed partial class ReaderSurface
             {
                 if (pointer.CompareTo(map.Run.ContentStart) <= 0) return map.Start;
                 if (pointer.CompareTo(map.Run.ContentEnd) <= 0)
-                    return map.Start + Math.Clamp(map.Run.ContentStart.GetOffsetToPosition(pointer), 0, map.Length);
+                    return map.Run is Run ? map.Start + RuntimeCompat.Clamp(map.Run.ContentStart.GetOffsetToPosition(pointer), 0, map.Length) : map.Start;
             }
         return runs.Count == 0 ? 0 : runs[^1].Start + runs[^1].Length;
     }

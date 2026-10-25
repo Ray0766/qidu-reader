@@ -1,7 +1,9 @@
 using System.Globalization;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 
 namespace TxtReader.App;
 
@@ -11,6 +13,8 @@ public sealed class BookCover : FrameworkElement
     public static readonly DependencyProperty BookProperty = DependencyProperty.Register(nameof(Book), typeof(ShelfBook), typeof(BookCover), new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
     public ShelfBook? Book { get => (ShelfBook?)GetValue(BookProperty); set => SetValue(BookProperty, value); }
     private static readonly string[] ColorsByBook = ["#344F46", "#485667", "#6B4647", "#745E3E", "#4A5050", "#54506A"];
+    private string? _coverPath;
+    private BitmapSource? _cover;
     protected override void OnRender(DrawingContext dc)
     {
         if (Book is not { } book || ActualWidth < 40) return;
@@ -24,6 +28,21 @@ public sealed class BookCover : FrameworkElement
         for (int i = 0; i < 4; i++)
             dc.DrawLine(new Pen(new SolidColorBrush(Color.FromArgb(45, 101, 92, 76)), .5), new Point(w - 8 + i, 5), new Point(w - 8 + i, h - 7));
         dc.DrawRoundedRectangle(new SolidColorBrush(color), null, new Rect(0, 0, w - 8, h - 4), 2, 2);
+        string coverPath = Path.Combine(Path.GetDirectoryName(book.Path) ?? "", ".qidu-cover");
+        if (_coverPath != coverPath)
+        {
+            _coverPath = coverPath; _cover = null;
+            try { if (File.Exists(coverPath) && new FileInfo(coverPath).Length <= 16 * 1024 * 1024) _cover = BookArtwork.Decode(File.ReadAllBytes(coverPath), 400, 600); }
+            catch (Exception error) when (error is IOException or NotSupportedException or ArgumentException) { }
+        }
+        if (_cover is not null)
+        {
+            double scale = Math.Min((w - 8) / _cover.PixelWidth, (h - 4) / _cover.PixelHeight);
+            double imageWidth = _cover.PixelWidth * scale, imageHeight = _cover.PixelHeight * scale;
+            dc.DrawImage(_cover, new Rect((w - 8 - imageWidth) / 2, (h - 4 - imageHeight) / 2, imageWidth, imageHeight));
+            dc.DrawRectangle(new LinearGradientBrush(Color.FromArgb(100, 0, 0, 0), Colors.Transparent, 0), null, new Rect(0, 0, 12, h - 4));
+            return;
+        }
         var cloth = new Pen(new SolidColorBrush(Color.FromArgb(9, 255, 255, 255)), .5);
         for (double y = 3; y < h - 4; y += 3) dc.DrawLine(cloth, new Point(0, y), new Point(w - 8, y));
         dc.DrawRectangle(new LinearGradientBrush(Color.FromArgb(110, 0, 0, 0), Colors.Transparent, 0), null, new Rect(0, 0, 14, h - 4));

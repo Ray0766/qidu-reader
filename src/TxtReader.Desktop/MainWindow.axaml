@@ -1,0 +1,80 @@
+<Window xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:local="using:Qidu.Desktop"
+        x:Class="Qidu.Desktop.MainWindow" Title="栖读" Width="1180" Height="800" MinWidth="760" MinHeight="520">
+  <Grid RowDefinitions="Auto,Auto,*,Auto">
+    <Border Grid.Row="0" BorderBrush="#C8D2C6" BorderThickness="0,0,0,1" Padding="20,10">
+      <Grid ColumnDefinitions="Auto,*,Auto">
+        <StackPanel Orientation="Horizontal" Spacing="8">
+          <TextBlock Text="栖读" FontSize="24" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,20,0" />
+          <Button x:Name="ShelfButton" Content="书架" />
+          <Button x:Name="ImportButton" Content="导入书籍" Classes="primary" />
+          <Button x:Name="SidebarButton" Content="目录与书签" />
+        </StackPanel>
+        <TextBlock x:Name="BookTitle" Grid.Column="1" Text="给阅读留一处安静的地方" VerticalAlignment="Center" HorizontalAlignment="Center" TextTrimming="CharacterEllipsis" Margin="20,0" />
+        <Button x:Name="BookmarkButton" Grid.Column="2" Content="＋ 书签" />
+      </Grid>
+    </Border>
+    <WrapPanel x:Name="ReadingToolbar" Grid.Row="1" Margin="20,8" Orientation="Horizontal">
+      <ComboBox x:Name="ModePicker" Width="100" Margin="0,0,10,0" />
+      <ComboBox x:Name="FontPicker" Width="154" Margin="0,0,10,0" />
+      <Button x:Name="SmallerButton" Content="A−" />
+      <TextBlock x:Name="SizeLabel" Width="30" VerticalAlignment="Center" TextAlignment="Center" />
+      <Button x:Name="LargerButton" Content="A＋" Margin="0,0,10,0" />
+      <ComboBox x:Name="ThemePicker" Width="118" Margin="0,0,10,0" />
+      <ComboBox x:Name="WidthPicker" Width="108" Margin="0,0,10,0" />
+      <ComboBox x:Name="EffectPicker" Width="108" />
+    </WrapPanel>
+    <Grid Grid.Row="2">
+      <Grid x:Name="ReadingGrid" ColumnDefinitions="Auto,*">
+        <Border x:Name="Sidebar" Width="240" Background="#E1E8DE" Padding="12,10" Margin="0,0,6,0">
+          <TabControl x:Name="SideTabs">
+            <TabItem Header="目录"><ListBox x:Name="ChapterList" /></TabItem>
+            <TabItem Header="搜索">
+              <Grid RowDefinitions="Auto,Auto,*,Auto">
+                <TextBox x:Name="SearchBox" PlaceholderText="搜索本书内容" MaxLength="256" />
+                <Button x:Name="SearchButton" Grid.Row="1" Content="全文搜索" HorizontalAlignment="Stretch" />
+                <ListBox x:Name="SearchList" Grid.Row="2" />
+                <Button x:Name="MoreSearchButton" Grid.Row="3" Content="更多结果" IsVisible="False" />
+              </Grid>
+            </TabItem>
+            <TabItem Header="书签">
+              <Grid RowDefinitions="*,Auto">
+                <ListBox x:Name="BookmarkList" />
+                <Button x:Name="DeleteBookmarkButton" Grid.Row="1" Content="删除选中书签" />
+              </Grid>
+            </TabItem>
+          </TabControl>
+        </Border>
+        <local:ReaderView x:Name="Reader" Grid.Column="1" />
+      </Grid>
+      <ScrollViewer x:Name="ShelfView" Background="#E7EDE5" Padding="48,24">
+        <StackPanel Spacing="20">
+          <Grid ColumnDefinitions="*,Auto">
+            <StackPanel Spacing="6">
+              <TextBlock Text="我的书架" FontSize="30" FontWeight="SemiBold" />
+              <TextBlock x:Name="ShelfCount" Foreground="#637564" />
+            </StackPanel>
+            <TextBox x:Name="ShelfFilter" Grid.Column="1" Width="240" PlaceholderText="查找书名" VerticalAlignment="Center" />
+          </Grid>
+          <Border x:Name="EmptyShelf" Padding="24,40" Background="#F3F3E9">
+            <StackPanel Spacing="14" HorizontalAlignment="Center">
+              <TextBlock Text="书架还空着，放一本喜欢的书吧。" FontSize="19" />
+              <TextBlock Text="支持 TXT 与 EPUB，书籍和进度保存在本机。" Foreground="#637564" />
+              <Button x:Name="SampleButton" Content="先读一段《山海来信》" HorizontalAlignment="Center" />
+            </StackPanel>
+          </Border>
+          <WrapPanel x:Name="ShelfPanel" />
+        </StackPanel>
+      </ScrollViewer>
+    </Grid>
+    <Border Grid.Row="3" BorderBrush="#C8D2C6" BorderThickness="0,1,0,0" Padding="20,8">
+      <Grid ColumnDefinitions="*,Auto,Auto">
+        <TextBlock x:Name="Notice" Text="TXT · EPUB　｜　本地阅读" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+        <TextBlock x:Name="ProgressLabel" Grid.Column="1" VerticalAlignment="Center" Margin="12,0" />
+        <StackPanel Grid.Column="2" Orientation="Horizontal">
+          <Button x:Name="PreviousButton" Content="← 上一页" />
+          <Button x:Name="NextButton" Content="下一页 →" />
+        </StackPanel>
+      </Grid>
+    </Border>
+  </Grid>
+</Window>

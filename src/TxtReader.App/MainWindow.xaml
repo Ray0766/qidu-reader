@@ -25,7 +25,7 @@
     <Button Content="A+" ToolTip="增大字号" Click="OnFontPlus" AutomationProperties.AutomationId="FontPlus" Padding="10,9"/>
     <Button Content="排版" Click="OnAppearance" AutomationProperties.AutomationId="Appearance" Padding="12,9" Margin="8,0,12,0"/>
    </StackPanel>
-   <Button x:Name="OpenButton" Content="导入 TXT" Background="#354A40" Foreground="#F3F1E9" Click="OnOpen" AutomationProperties.AutomationId="OpenBook" Padding="16,9"/>
+   <Button x:Name="OpenButton" Content="导入书籍" Background="#354A40" Foreground="#F3F1E9" Click="OnOpen" AutomationProperties.AutomationId="OpenBook" Padding="16,9"/>
   </StackPanel>
  </Grid>
 </Border>
@@ -95,7 +95,7 @@
    <Border.Effect><DropShadowEffect Color="#374337" BlurRadius="24" ShadowDepth="7" Opacity="0.16"/></Border.Effect>
    <local:ReaderSurface x:Name="Reader" AutomationProperties.AutomationId="ReadingArea"/>
   </Border>
-  <TextBlock x:Name="Notice" Grid.Row="2" Text="打开或拖入 TXT，开始阅读" FontSize="11" Foreground="{StaticResource Muted}" HorizontalAlignment="Center" VerticalAlignment="Bottom" TextTrimming="CharacterEllipsis"/>
+  <TextBlock x:Name="Notice" Grid.Row="2" Text="打开或拖入 TXT / EPUB，开始阅读" FontSize="11" Foreground="{StaticResource Muted}" HorizontalAlignment="Center" VerticalAlignment="Bottom" TextTrimming="CharacterEllipsis"/>
  </Grid>
 </Grid>
 <Border x:Name="ReadingFooter" Grid.Row="2" Background="#DDE3DF">
@@ -130,9 +130,9 @@
    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Margin="24,20" MaxWidth="420">
     <Image Source="Assets/AppIcon.png" Width="64" Height="64" Margin="0,0,0,22" RenderOptions.BitmapScalingMode="HighQuality"/>
     <TextBlock x:Name="ShelfEmptyMessage" Text="书架还空着" FontFamily="SimSun" FontSize="24" FontWeight="Bold" TextAlignment="Center" TextWrapping="Wrap"/>
-    <TextBlock x:Name="ShelfEmptyDetail" Text="导入正在读的小说，也可以把 TXT 拖进来" Foreground="{StaticResource Muted}" Margin="0,12,0,24" TextAlignment="Center" TextWrapping="Wrap" LineHeight="22"/>
+    <TextBlock x:Name="ShelfEmptyDetail" Text="导入正在读的小说，也可以把 TXT 或 EPUB 拖进来" Foreground="{StaticResource Muted}" Margin="0,12,0,24" TextAlignment="Center" TextWrapping="Wrap" LineHeight="22"/>
     <StackPanel x:Name="ShelfEmptyImport" Orientation="Horizontal" HorizontalAlignment="Center">
-     <Button Content="导入 TXT" Click="OnOpen" Background="#354A40" Foreground="#FAF8F2" Padding="24,11" AutomationProperties.AutomationId="EmptyImport"/>
+     <Button Content="导入书籍" Click="OnOpen" Background="#354A40" Foreground="#FAF8F2" Padding="24,11" AutomationProperties.AutomationId="EmptyImport"/>
      <Button Content="先读示例" Click="OnDemo" Margin="12,0,0,0" Foreground="{StaticResource Muted}" AutomationProperties.AutomationId="EmptyDemo"/>
     </StackPanel>
     <Button x:Name="ShelfClearFilter" Content="清除筛选" Click="OnClearShelfFilter" Background="#354A40" Foreground="#FAF8F2" HorizontalAlignment="Center" Padding="24,11" Visibility="Collapsed" AutomationProperties.AutomationId="ClearShelfFilter"/>

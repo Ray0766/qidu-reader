@@ -31,6 +31,11 @@ public sealed class LibraryService(SessionStore store)
             if (existing.EncodingName != book.EncodingName)
                 book = new BookDocument(book.Title, book.Text, existing.EncodingName, existing.Path);
         }
+        if (book.Cover is { } cover)
+        {
+            string coverPath = Path.Combine(Path.GetDirectoryName(managedPath)!, ".qidu-cover");
+            if (!File.Exists(coverPath)) await Task.Run(() => File.WriteAllBytes(coverPath, cover.Data));
+        }
         return new(store.Register(book, managedPath), book, existing is not null);
     }
 }

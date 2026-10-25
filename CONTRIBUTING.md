@@ -4,7 +4,7 @@
 
 ## 环境
 
-- Windows 11 x64；界面使用 WPF，不支持在 Linux 或 macOS 运行。
+- Windows 主界面使用 WPF；旧 Windows 预览以同一套界面构建为 .NET Framework 4.8。Mac 界面位于独立的 Avalonia 项目，复用核心和书库服务。
 - PowerShell 7 和 .NET SDK 10.0.402（见 `global.json`）。普通用户使用发布包无需安装这些工具。
 - 安装包需要 Inno Setup 7；MSIX 需要 Windows SDK 中的 MakeAppx 与 MakePri。日常开发不要求安装打包工具。
 
@@ -35,6 +35,24 @@ GitHub Actions 会在 Windows 上构建并运行独立回归，仅保存自有�
 
 - `src/TxtReader.Core`：文本解码、章节识别、分段和搜索。
 - `src/TxtReader.App`：WPF 阅读界面、书架、纸页动效和 SQLite 存储。
+- `src/TxtReader.WindowsLegacy`：链接 WPF 源码的 net48 兼容构建（x64 / x86）。
+- `src/TxtReader.Desktop`：Mac arm64 的 Avalonia 界面；Windows 构建只用于共用界面的开发验证。
 - `samples`、`assets`：自有排版示例与原创图标。
 - `scripts`、`installer`：构建、验证、安装包和商店包装。
 - `third-party`：随程序分发的第三方许可。
+
+## 兼容与 Mac 预览
+
+```powershell
+./scripts/build-compat.ps1 -Architecture x64 -OutputDirectory ./artifacts/compat-publish
+./scripts/verify.ps1 -Executable ./artifacts/compat-publish/TxtReader.exe -ReportDirectory ./artifacts/compat-check
+
+dotnet publish src/TxtReader.Desktop/TxtReader.Desktop.csproj -c Release -r osx-arm64 --self-contained true -p:PublishTrimmed=false -p:RestoreLockedMode=true -o artifacts/mac-publish
+# 以下运行步骤需要 Mac；Windows 可改成 win-x64 进行共用界面验证。
+./scripts/verify-desktop-cross.ps1 -Executable ./artifacts/mac-publish/Qidu -ReportDirectory ./artifacts/mac-check
+python3 scripts/package-macos.py --publish artifacts/mac-publish --output artifacts/mac-package --report artifacts/mac-check/report.json
+```
+
+Mac 打包脚本需要 Python 3，仅用标准库；生成 `.app`、保留执行权限的 ZIP 和 SHA-256。在 Mac 上会额外进行本地开发签名与签名完整性检查，仍不等于 Developer ID 或公证。正式发布前还需用户设备上的 Finder 启动、文件选择器与触控板验收。
+
+`Desktop portability preview` 工作流在 macOS 15 arm64 上运行独立阅读测试和新进程续读检查，报告会明确 `nativeMacVerified`。Windows 上的相同测试不得改写为 Mac 实机通过。兼容版在现代 Windows 上通过也不代表 Win7/8.1 已通过。

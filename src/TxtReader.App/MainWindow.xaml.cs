@@ -36,12 +36,23 @@ public partial class MainWindow : Window
     {
         get { int i = Array.IndexOf(_arguments, "--test-book"); return i >= 0 && i + 1 < _arguments.Length ? _arguments[i + 1] : null; }
     }
+    internal string? TestEpubPath
+    {
+        get { int i = Array.IndexOf(_arguments, "--test-epub"); return i >= 0 && i + 1 < _arguments.Length ? _arguments[i + 1] : null; }
+    }
+    internal bool EpubOnly => _arguments.Contains("--epub-only");
     private bool ShelfVisible => LibraryWorkspace.Visibility == Visibility.Visible;
 
     public MainWindow(string[] arguments)
     {
         _arguments = arguments;
         InitializeComponent();
+        // Older laptops often have a 1366 x 768 desktop. Keep the footer on screen.
+        var workArea = SystemParameters.WorkArea;
+        MinWidth = Math.Min(MinWidth, workArea.Width);
+        MinHeight = Math.Min(MinHeight, workArea.Height);
+        Width = Math.Min(Width, workArea.Width);
+        Height = Math.Min(Height, workArea.Height);
         Reader.AnimationsEnabled = !arguments.Contains("--self-test");
         EncodingPicker.ItemsSource = new[] { "自动", "UTF-8", "GB18030", "GBK", "Big5", "UTF-16", "UTF-16BE" };
         EncodingPicker.SelectedIndex = 0;
@@ -54,7 +65,9 @@ public partial class MainWindow : Window
         Reader.PositionChanged += (_, _) => UpdateReadingUi();
         ChapterList.IsVisibleChanged += (_, _) => { if (ChapterList.IsVisible) RevealCurrentChapter(); };
         Reader.InteractionFailed += message => Notice.Text = message;
-        Deactivated += (_, _) => Reader.CancelPageDrag();
+        // In-process regression gestures are synthetic; unrelated user focus changes
+        // must not cancel them. Native focus cancellation is covered by DesktopProbe.
+        if (!arguments.Contains("--self-test")) Deactivated += (_, _) => Reader.CancelPageDrag();
         StateChanged += (_, _) => { if (WindowState == WindowState.Minimized) Reader.CancelPageDrag(); };
         _saveTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
         _saveTimer.Tick += (_, _) => SavePosition();
@@ -74,7 +87,7 @@ public partial class MainWindow : Window
         if (index >= 0) { await PrototypeTests.RunAsync(this, _arguments[index + 1]); return; }
         await RunUiAsync(async () =>
         {
-            string? supplied = _arguments.FirstOrDefault(x => File.Exists(x) && x.EndsWith(".txt", StringComparison.OrdinalIgnoreCase));
+            string? supplied = _arguments.FirstOrDefault(x => File.Exists(x) && BookLoader.IsSupportedPath(x));
             var last = _store.Read();
             if (supplied is not null) await OpenFileAsync(supplied);
             else if (last is not null && File.Exists(last.Path)) await OpenFileAsync(last.Path, last.EncodingName);
@@ -129,7 +142,7 @@ public partial class MainWindow : Window
     public async Task OpenLibraryBookAsync(string bookId)
     {
         var item = _store.FindBook(bookId) ?? throw new InvalidOperationException("这本书不在书架中。");
-        if (!File.Exists(item.Path)) throw new FileNotFoundException("书库副本已找不到，请重新导入原 TXT；已有进度和书签仍保留。");
+        if (!File.Exists(item.Path)) throw new FileNotFoundException("书库副本已找不到，请重新导入原书；已有进度和书签仍保留。");
         await OpenFileAsync(item.Path, item.EncodingName);
     }
 
@@ -171,6 +184,7 @@ public partial class MainWindow : Window
         _returnAnchor = null;
         ReturnButton.Visibility = Visibility.Collapsed;
         var book = imported.Document;
+        EncodingPicker.IsEnabled = !book.IsEpub;
         var session = _store.Read(book.ContentId);
         _activePath = null;
         _activeTitle = imported.Shelf.Title;
@@ -185,6 +199,7 @@ public partial class MainWindow : Window
         UpdateReadingUi();
         RefreshBookmarks();
         Notice.Text = session is null ? "Ctrl+F 搜索全文，Ctrl+D 添加书签" : "已回到上次阅读的位置";
+        if (book.Warnings.Count > 0) Notice.Text += " · " + string.Join(" ", book.Warnings);
         SavePosition(force: true);
         RefreshShelf();
     }
@@ -268,7 +283,7 @@ public partial class MainWindow : Window
         ShelfList.Visibility = books.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
         bool filtered = !string.IsNullOrWhiteSpace(ShelfFilter.Text);
         ShelfEmptyMessage.Text = filtered ? "没有找到这个书名" : "书架还空着";
-        ShelfEmptyDetail.Text = filtered ? "换个关键词，或清除筛选查看全部藏书" : "导入正在读的小说，也可以把 TXT 拖进来";
+        ShelfEmptyDetail.Text = filtered ? "换个关键词，或清除筛选查看全部藏书" : "导入正在读的小说，也可以把 TXT 或 EPUB 拖进来";
         ShelfEmptyImport.Visibility = filtered ? Visibility.Collapsed : Visibility.Visible;
         ShelfClearFilter.Visibility = filtered ? Visibility.Visible : Visibility.Collapsed;
         ContinueReadingButton.Visibility = _activePath is not null ? Visibility.Visible : Visibility.Collapsed;
@@ -458,7 +473,7 @@ public partial class MainWindow : Window
 
     private async void OnOpen(object sender, RoutedEventArgs e)
     {
-        var dialog = new OpenFileDialog { Filter = "TXT 小说 (*.txt)|*.txt", Title = "导入本地小说（可多选）", Multiselect = true };
+        var dialog = new OpenFileDialog { Filter = "电子书 (*.txt;*.epub)|*.txt;*.epub|TXT 小说 (*.txt)|*.txt|EPUB 电子书 (*.epub)|*.epub", Title = "导入本地小说（可多选）", Multiselect = true };
         if (dialog.ShowDialog(this) != true) return;
         bool stayOnShelf = ShelfVisible || dialog.FileNames.Length > 1;
         await RunUiAsync(async () =>

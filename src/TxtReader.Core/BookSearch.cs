@@ -14,13 +14,13 @@ public static class BookSearch
 
     private static SearchPage FindPage(BookDocument book, string query, int startOffset, CancellationToken token, int pageSize)
     {
-        ArgumentOutOfRangeException.ThrowIfLessThan(pageSize, 1);
+        if (pageSize < 1) throw new ArgumentOutOfRangeException(nameof(pageSize));
         if (string.IsNullOrEmpty(query)) return new([], false, 0);
         if (query.Length > 256) throw new ArgumentException("搜索内容最多 256 个字符。", nameof(query));
         var hits = new List<SearchHit>(pageSize);
         string text = book.Text;
         int limit = text.Length - query.Length + 1;
-        for (int block = Math.Clamp(startOffset, 0, text.Length); block < limit;)
+        for (int block = RuntimeCompat.Clamp(startOffset, 0, text.Length); block < limit;)
         {
             token.ThrowIfCancellationRequested();
             int nextBlock = Math.Min(limit, block + ScanBlockSize);

@@ -107,7 +107,7 @@ internal sealed class PageTurnLayer : Grid
         if (_frame is null) return;
         long start = Stopwatch.GetTimestamp();
         _frame(point);
-        MaxFrameMs = Math.Max(MaxFrameMs, Stopwatch.GetElapsedTime(start).TotalMilliseconds);
+        MaxFrameMs = Math.Max(MaxFrameMs, RuntimeCompat.ElapsedSince(start).TotalMilliseconds);
         Frames++;
     }
 
@@ -117,7 +117,7 @@ internal sealed class PageTurnLayer : Grid
         Draw(_pointer);
         double span = Math.Max(1, (_landing - _rest).Length);
         Point to = complete ? _landing : _rest;
-        double duration = 180 + 140 * Math.Clamp((to - _pointer).Length / span, 0, 1);
+        double duration = 180 + 140 * RuntimeCompat.Clamp((to - _pointer).Length / span, 0, 1);
         return AnimateAsync(_pointer, to, animate ? duration : 0);
     }
 
@@ -136,7 +136,7 @@ internal sealed class PageTurnLayer : Grid
         _finish = finish;
         _rendering = (_, _) =>
         {
-            double t = Math.Clamp(watch.Elapsed.TotalMilliseconds / duration, 0, 1);
+            double t = RuntimeCompat.Clamp(watch.Elapsed.TotalMilliseconds / duration, 0, 1);
             Draw(from + (to - from) * (.5 - .5 * Math.Cos(t * Math.PI)));
             if (t >= 1) finish(true);
         };
@@ -233,7 +233,7 @@ internal sealed class PageTurnLayer : Grid
             // grip offset so the page does not jump to a corner on first movement.
             // Moving back beyond the press point must flatten, not turn the other way.
             double horizontal = Math.Min(0, direction * (point.X - press.X));
-            double gripY = Math.Clamp(press.Y, 0, height);
+            double gripY = RuntimeCompat.Clamp(press.Y, 0, height);
             var target = new Point(pageWidth + horizontal, gripY + (horizontal < 0 ? point.Y - press.Y : 0));
             var curl = new PaperCurl(pageWidth, height, gripY, target);
             CurlRadius = curl.Radius;

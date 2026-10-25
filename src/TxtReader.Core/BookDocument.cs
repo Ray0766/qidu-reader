@@ -4,7 +4,8 @@ using System.Text.RegularExpressions;
 
 namespace TxtReader.Core;
 
-public sealed record TextBlockInfo(int Start, int Length, bool Continuation, bool Heading);
+public sealed record BookImage(string Name, string MediaType, byte[] Data);
+public sealed record TextBlockInfo(int Start, int Length, bool Continuation, bool Heading, BookImage? Image = null, bool PageBreakBefore = false);
 public sealed record Chapter(string Title, int Offset);
 public sealed record TextChunk(int FirstBlock, int BlockCount, int Start, int End);
 
@@ -18,18 +19,32 @@ public sealed class BookDocument
     public IReadOnlyList<TextBlockInfo> Blocks { get; }
     public IReadOnlyList<TextChunk> Chunks { get; }
     public IReadOnlyList<Chapter> Chapters { get; }
+    public IReadOnlyDictionary<int, BookImage> Images { get; }
+    public BookImage? Cover { get; }
+    public IReadOnlyList<string> Warnings { get; }
+    public bool IsEpub => EncodingName == "EPUB";
 
     private static readonly Regex ChapterPattern = new(
         @"^(?:第[零〇一二三四五六七八九十百千万两壹贰叁肆伍陆柒捌玖拾\d]+[章回卷部节集]|序章|序言|前言|楔子|引子|尾声|后记|番外|终章|Chapter\s+\d+)",
         RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(100));
 
-    public BookDocument(string title, string text, string encodingName = "UTF-8", string? sourcePath = null)
+    public BookDocument(string title, string text, string encodingName = "UTF-8", string? sourcePath = null,
+        IReadOnlyList<Chapter>? navigation = null, IReadOnlyDictionary<int, BookImage>? images = null,
+        ISet<int>? headings = null, ISet<int>? pageBreaks = null, BookImage? cover = null, IReadOnlyList<string>? warnings = null)
     {
         Title = title;
         Text = text.Replace("\r\n", "\n").Replace('\r', '\n').TrimStart('\uFEFF');
         EncodingName = encodingName;
         SourcePath = sourcePath;
-        ContentId = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(Text)));
+        Images = images ?? new Dictionary<int, BookImage>();
+        Cover = cover;
+        Warnings = warnings ?? Array.Empty<string>();
+        // Keep all existing TXT IDs unchanged. EPUB IDs include illustration bytes so
+        // two illustrated editions cannot accidentally share positions or covers.
+        string identityText = IsEpub ? "EPUB-v1\n" + Text + "\n" + string.Join("\n",
+            Images.OrderBy(x => x.Key).Select(x => x.Key + ":" + RuntimeCompat.Sha256Hex(x.Value.Data))) +
+            (Cover is null ? "" : "\ncover:" + RuntimeCompat.Sha256Hex(Cover.Data)) : Text;
+        ContentId = (IsEpub ? "EPUB-" : "") + RuntimeCompat.Sha256Hex(Encoding.UTF8.GetBytes(identityText));
         var blocks = new List<TextBlockInfo>();
         var chapters = new List<Chapter>();
         for (int start = 0; start < Text.Length;)
@@ -38,7 +53,7 @@ public sealed class BookDocument
             if (end < 0) end = Text.Length;
             int length = end - start;
             string? heading = length is > 0 and <= 90 ? Text.Substring(start, length).Trim() : null;
-            bool isHeading = heading is not null && ChapterPattern.IsMatch(heading);
+            bool isHeading = IsEpub ? headings?.Contains(start) == true : heading is not null && ChapterPattern.IsMatch(heading);
             if (isHeading) chapters.Add(new Chapter(heading!, start));
             if (length == 0) blocks.Add(new(start, 0, false, false));
             for (int part = start; part < end;)
@@ -50,7 +65,8 @@ public sealed class BookDocument
                     System.Globalization.UnicodeCategory.NonSpacingMark or
                     System.Globalization.UnicodeCategory.SpacingCombiningMark or
                     System.Globalization.UnicodeCategory.EnclosingMark)) next++;
-                blocks.Add(new(part, next - part, part != start, isHeading));
+                Images.TryGetValue(part, out var image);
+                blocks.Add(new(part, next - part, part != start, isHeading, image, pageBreaks?.Contains(part) == true));
                 part = next;
             }
             start = end + 1;
@@ -59,23 +75,26 @@ public sealed class BookDocument
         if (chapters.Count == 0 || chapters[0].Offset != 0) chapters.Insert(0, new("开篇", 0));
         var chunks = new List<TextChunk>();
         int first = 0;
+        int imageCount = blocks[0].Image is null ? 0 : 1;
         for (int i = 1; i <= blocks.Count; i++)
         {
-            if (i == blocks.Count || blocks[i].Start - blocks[first].Start >= 12000)
+            if (i == blocks.Count || blocks[i].Start - blocks[first].Start >= 12000 || imageCount >= 4)
             {
                 int end = i == blocks.Count ? Text.Length : blocks[i].Start;
                 chunks.Add(new(first, i - first, blocks[first].Start, end));
                 first = i;
+                imageCount = 0;
             }
+            if (i < blocks.Count && blocks[i].Image is not null) imageCount++;
         }
         Blocks = blocks;
-        Chapters = chapters;
+        Chapters = navigation is { Count: > 0 } ? navigation.OrderBy(x => x.Offset).ToArray() : chapters;
         Chunks = chunks;
     }
 
     public int ClampOffset(int offset)
     {
-        offset = Math.Clamp(offset, 0, Math.Max(0, Text.Length - 1));
+        offset = RuntimeCompat.Clamp(offset, 0, Math.Max(0, Text.Length - 1));
         if (offset > 0 && char.IsLowSurrogate(Text[offset])) offset--;
         return offset;
     }
@@ -103,7 +122,7 @@ public sealed class BookDocument
     }
 
     public string Excerpt(int offset, int count = 40) => Text.Length == 0 ? "" :
-        Text.Substring(ClampOffset(offset), Math.Min(count, Text.Length - ClampOffset(offset))).Replace('\n', ' ');
+        Text.Substring(ClampOffset(offset), Math.Min(count, Text.Length - ClampOffset(offset))).Replace('\n', ' ').Replace("\uFFFC", "[插图]");
 }
 
 public static class BookLoader
@@ -112,15 +131,19 @@ public static class BookLoader
 
     public static async Task<BookDocument> LoadAsync(string path, string encoding = "自动", CancellationToken token = default)
     {
+        if (Path.GetExtension(path).Equals(".epub", StringComparison.OrdinalIgnoreCase))
+            return await Task.Run(() => EpubLoader.Load(path, token), token);
         var info = new FileInfo(path);
         if (info.Length > 150L * 1024 * 1024) throw new InvalidOperationException("此预览版支持最大 150 MiB 的 TXT，请先拆分文件。");
-        byte[] bytes = await File.ReadAllBytesAsync(path, token);
+        byte[] bytes = await RuntimeCompat.ReadAllBytesAsync(path, token);
         return await Task.Run(() =>
         {
             var (text, name) = Decode(bytes, encoding);
             return new BookDocument(Path.GetFileNameWithoutExtension(path), text, name, Path.GetFullPath(path));
         }, token);
     }
+
+    public static bool IsSupportedPath(string path) => new[] { ".txt", ".epub" }.Contains(Path.GetExtension(path), StringComparer.OrdinalIgnoreCase);
 
     public static (string Text, string Name) Decode(byte[] bytes, string name = "自动")
     {

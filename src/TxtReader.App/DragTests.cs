@@ -30,7 +30,7 @@ internal static class DragTests
             var grip = curl.Map(500, top ? 0 : 650);
             var a = curl.Map(0, 0); var b = curl.Map(0, 650);
             Check(Math.Abs(a.X) + Math.Abs(a.Y) + Math.Abs(a.Z) + Math.Abs(b.X) + Math.Abs(b.Y - 650) + Math.Abs(b.Z) < .01 &&
-                (new Point(grip.X, grip.Y) - curl.Target).Length < .01 && double.IsFinite(grip.Z),
+                (new Point(grip.X, grip.Y) - curl.Target).Length < .01 && RuntimeCompat.IsFinite(grip.Z),
                 $"fixed spine and constrained grab {top} {target}", new { a, b, grip, curl.Target, curl.Radius });
         }
         foreach (double scale in new[] { 1d, 1.5, 2d })

@@ -21,6 +21,11 @@ internal static class LibraryLocation
         {
             Guid localAppData = new("F1B32785-6FBA-4FCF-9D55-7B8E7F157091");
             int result = SHGetKnownFolderPath(in localAppData, 0x00010000, 0, out nint value); // KF_FLAG_NO_PACKAGE_REDIRECTION
+            if (result == unchecked((int)0x80070057)) // Older Windows does not recognize this flag.
+            {
+                Marshal.FreeCoTaskMem(value);
+                result = SHGetKnownFolderPath(in localAppData, 0, 0, out value);
+            }
             try
             {
                 Marshal.ThrowExceptionForHR(result);
@@ -40,7 +45,7 @@ internal static class LibraryLocation
         if (source.Equals(target, StringComparison.OrdinalIgnoreCase) || Within(source, target) || Within(target, source))
             throw new ArgumentException("旧书库和新书库必须使用互不包含的独立目录。");
         RejectLinks(target);
-        string key = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(target.ToUpperInvariant())));
+        string key = RuntimeCompat.Sha256Hex(Encoding.UTF8.GetBytes(target.ToUpperInvariant()));
         using var gate = new Mutex(false, @"Local\Qidu.LibraryMigration." + key);
         bool acquired;
         try { acquired = gate.WaitOne(TimeSpan.FromSeconds(30)); }
@@ -85,10 +90,10 @@ internal static class LibraryLocation
                         while (reader.Read()) paths.Add(reader.GetString(0));
                     }
                     using var transaction = snapshot.BeginTransaction();
-                    foreach (string path in paths.Where(p => Path.IsPathFullyQualified(p) && Within(p, source)))
+                    foreach (string path in paths.Where(p => WindowsCompat.IsPathFullyQualified(p) && Within(p, source)))
                     {
                         RejectLinks(path);
-                        string relative = Path.GetRelativePath(source, path);
+                        string relative = WindowsCompat.GetRelativePath(source, path);
                         string copied = Path.Combine(stage, relative);
                         if (!File.Exists(path)) throw new FileNotFoundException("旧书库中的小说副本缺失；迁移已停止，原进度仍保留。", path);
                         Directory.CreateDirectory(Path.GetDirectoryName(copied)!);
@@ -137,7 +142,7 @@ internal static class LibraryLocation
     internal static bool Within(string path, string root) => Path.GetFullPath(path).StartsWith(
         Path.GetFullPath(root).TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase);
     internal static string Hash(string path)
-    { using var stream = File.OpenRead(path); return Convert.ToHexString(SHA256.HashData(stream)); }
+    { using var stream = File.OpenRead(path); return RuntimeCompat.Sha256Hex(stream); }
     private static void RejectLinks(string path)
     {
         for (string? current = Path.GetFullPath(path); current is not null; current = Path.GetDirectoryName(current))

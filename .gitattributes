@@ -9,3 +9,5 @@
 *.iss text eol=crlf
 *.png binary
 *.ico binary
+# Preserve upstream license/notice formatting verbatim.
+third-party/* -whitespace

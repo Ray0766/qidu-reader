@@ -88,9 +88,11 @@ internal static class ChapterFollowTests
         tabs.SelectedItem = window.FindName("SearchTab");
         await Settle();
         window.Activate();
+        await Settle();
         var search = (TextBox)window.FindName("SearchInput");
         search.Focus();
-        check(search.IsKeyboardFocusWithin, "chapter follow: search focus fixture established", null);
+        await Settle();
+        check(search.IsKeyboardFocusWithin, "chapter follow: search focus fixture established", new { window.IsActive, search.IsVisible, search.IsEnabled });
         await reader.NavigateAsync(book.Chapters[25].Offset + 20);
         await reader.NavigateAsync(book.Chapters[154].Offset + 20);
         await Settle();

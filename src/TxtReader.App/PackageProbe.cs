@@ -11,7 +11,7 @@ namespace TxtReader.App;
 /// <summary>Explicit QA entry point. Its fixed test roots cannot address the user's real library.</summary>
 internal static class PackageProbe
 {
-    internal sealed record Config(string RunId, string Stage, bool Advance, string ReportFolder);
+    internal sealed record Config(string RunId, string Stage, bool Advance, string ReportFolder, bool Standalone = false);
     private static Config? _config;
     private static object? _before;
     private static readonly JsonSerializerOptions Json = new() { WriteIndented = true };
@@ -23,7 +23,8 @@ internal static class PackageProbe
         int index = Array.IndexOf(args, "--package-probe");
         if (index < 0) return null;
         _config = JsonSerializer.Deserialize<Config>(File.ReadAllText(args[index + 1]))!;
-        if (!Guid.TryParseExact(_config.RunId, "N", out _) || _config.Stage.Any(c => !char.IsAsciiLetterOrDigit(c) && c != '-'))
+        if (!Guid.TryParseExact(_config.RunId, "N", out _) || _config.Stage.Any(c =>
+            !(c is >= 'A' and <= 'Z' or >= 'a' and <= 'z' or >= '0' and <= '9' or '-')))
             throw new ArgumentException("Invalid isolated package probe configuration.");
         string legacy = Path.Combine(LibraryLocation.PhysicalLocalAppData, "Qidu-Validation", _config.RunId, "legacy");
         string target = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Qidu-Validation", _config.RunId, "library");
@@ -31,7 +32,7 @@ internal static class PackageProbe
         File.WriteAllText(Path.Combine(_config.ReportFolder, _config.Stage + "-startup.json"), JsonSerializer.Serialize(new
         {
             legacy, target, normalLocalAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            physicalLocalAppData = LibraryLocation.PhysicalLocalAppData, processId = Environment.ProcessId
+            physicalLocalAppData = LibraryLocation.PhysicalLocalAppData, processId = WindowsCompat.ProcessId
         }, Json));
         LibraryLocation.Prepare(legacy, target);
         using (var initialized = new SessionStore(target)) { }
@@ -46,7 +47,7 @@ internal static class PackageProbe
         var config = _config ?? JsonSerializer.Deserialize<Config>(File.ReadAllText(args[index + 1]))!;
         Directory.CreateDirectory(config.ReportFolder);
         File.WriteAllText(Path.Combine(config.ReportFolder, config.Stage + "-startup-error.json"),
-            JsonSerializer.Serialize(new { passed = false, failure = error.ToString(), processId = Environment.ProcessId }, Json));
+            JsonSerializer.Serialize(new { passed = false, failure = error.ToString(), processId = WindowsCompat.ProcessId }, Json));
         return true;
     }
 
@@ -60,14 +61,17 @@ internal static class PackageProbe
         string? package = null;
         try
         {
-            uint length = 0;
-            int result = GetCurrentPackageFullName(ref length, null);
-            if (result == 122)
+            if (!_config.Standalone)
             {
-                var name = new StringBuilder((int)length);
-                if (GetCurrentPackageFullName(ref length, name) == 0) package = name.ToString();
+                uint length = 0;
+                int result = GetCurrentPackageFullName(ref length, null);
+                if (result == 122)
+                {
+                    var name = new StringBuilder((int)length);
+                    if (GetCurrentPackageFullName(ref length, name) == 0) package = name.ToString();
+                }
+                Check(package is not null && package.StartsWith("Qidu.InstallValidation_", StringComparison.Ordinal), "running with installed validation MSIX identity", package);
             }
-            Check(package is not null && package.StartsWith("Qidu.InstallValidation_", StringComparison.Ordinal), "running with installed validation MSIX identity", package);
             Check(window.Store.Folder.StartsWith(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Qidu-Validation") + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase), "isolated library outside AppData", window.Store.Folder);
             if (window.ReadingSurface.Book is null)
             {
@@ -103,7 +107,7 @@ internal static class PackageProbe
                 // A new book imported after packaging must also survive update and removal.
                 string input = Path.Combine(_config.ReportFolder, "安装后加入.txt");
                 Directory.CreateDirectory(_config.ReportFolder);
-                await File.WriteAllTextAsync(input, "第一章 新的书\n这是安装后新加入的测试小说。\n" + new string('新', 800));
+                await RuntimeCompat.WriteAllTextAsync(input, "第一章 新的书\n这是安装后新加入的测试小说。\n" + new string('新', 800));
                 var imported = await new LibraryService(window.Store).ImportAsync(input);
                 Check(File.Exists(imported.Shelf.Path) && LibraryLocation.Within(imported.Shelf.Path, window.Store.Folder), "new import is stored in persistent library");
             }
@@ -114,8 +118,9 @@ internal static class PackageProbe
         Directory.CreateDirectory(_config.ReportFolder);
         File.WriteAllText(Path.Combine(_config.ReportFolder, _config.Stage + ".json"), JsonSerializer.Serialize(new
         {
-            passed = failure is null, package, stage = _config.Stage, processId = Environment.ProcessId,
-            executable = Environment.ProcessPath, library = window.Store.Folder, before = _before,
+            passed = failure is null, package, stage = _config.Stage, processId = WindowsCompat.ProcessId,
+            framework = RuntimeInformation.FrameworkDescription, is64BitProcess = Environment.Is64BitProcess,
+            executable = WindowsCompat.ProcessPath, library = window.Store.Folder, before = _before,
             after = Snapshot(window.Store.Folder), checks, failure
         }, Json));
         window.Close();
