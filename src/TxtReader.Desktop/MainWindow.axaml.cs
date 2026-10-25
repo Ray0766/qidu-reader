@@ -34,7 +34,14 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
-        string folder = Argument("--data-dir") ?? LibraryLocation.PrepareDefault(); Directory.CreateDirectory(folder);
+        string folder = Argument("--data-dir") ?? LibraryLocation.PrepareDefault();
+        string? validation = Argument("--self-test") ?? Argument("--resume-test");
+        if (validation is not null && (Argument("--data-dir") is null ||
+            !string.Equals(Path.GetFullPath(folder).TrimEnd(Path.DirectorySeparatorChar),
+                Path.GetFullPath(Path.Combine(validation, "library")).TrimEnd(Path.DirectorySeparatorChar),
+                OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal)))
+            throw new ArgumentException("Reading checks require --data-dir <report directory>/library; the normal library is forbidden.");
+        Directory.CreateDirectory(folder);
         _lock = new FileStream(Path.Combine(folder, ".reader.lock"), FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
         Store = new SessionStore(folder); _library = new LibraryService(Store);
         _loading = true;
