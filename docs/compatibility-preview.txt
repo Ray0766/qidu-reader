@@ -22,6 +22,9 @@ https://dotnet.microsoft.com/download/dotnet-framework/net48
 首次试用前，建议正常关闭阅读器后备份完整 QiduLibrary 文件夹。
 卸载兼容预览只移除程序，不删除书库，也不卸载系统运行组件。
 本版没有修改已发布的 0.1.9 或正在审核的商店安装包。
+0.1.9 不支持 EPUB；回到旧版后，请使用预览版打开 EPUB，原有 TXT 可继续在旧版阅读。
+同一发布页提供 SHA256-0.2.0-preview.2.txt，包含安装包和说明文件的校验值。
+Windows 可在终端运行 certutil -hashfile "下载文件的完整路径" SHA256，对照校验文件。
 
 阅读：导入本地 TXT 或 EPUB，或点击“先读示例”。支持单页、双页、滚动，字号、字体、背景和阅读宽度可调。
 EPUB 2/3 可重排小说支持书内目录、封面、JPEG/PNG/GIF/BMP 插图，并使用栖读排版。
@@ -33,4 +36,5 @@ Esc 可取消拖页，Ctrl+B 显示/隐藏目录，Ctrl+F 搜索，Ctrl+D 加书
 
 这是离线 TXT / EPUB 阅读器，不提供小说下载、账号或云同步。手机版已停止开发。
 项目：https://github.com/Ray0766/qidu-reader
+预览版：https://github.com/Ray0766/qidu-reader/releases/tag/v0.2.0-preview.2
 许可：MIT，见 LICENSE.txt；第三方组件许可见 third-party。

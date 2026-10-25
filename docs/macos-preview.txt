@@ -12,14 +12,20 @@ Command+O 导入，Command+F 搜索，Command+D 保存书签。
 这是开发预览，尚未经过 Apple Developer ID 签名和公证。
 因此不能承诺互联网下载后无安全提示。首次启动若被 macOS 拦截，
 系统确认须由你本人操作；本项目不会关闭 Gatekeeper 或改变系统安全设置。
-实际 Mac 验证情况见同批 package-receipt.json 的 native_mac_verified 字段。
-不要将“Windows 上运行了共用界面”视为已经通过 Mac 实机验证。
+本包已在 macOS 15.7.9 / arm64 原生环境通过 53 项阅读检查、3 项新进程续读检查，
+并从最终 app 再次验证续读。你的 Mac 上的 Finder 首次启动、文件选择器和触控板仍需试用。
+验证记录：https://github.com/Ray0766/qidu-reader/actions/runs/40180313112
 
 书籍副本、书架、书签和进度保存在：
 ~/Library/Application Support/Qidu
 升级时退出栖读后替换 .app；移走 .app 不会删除此书库。
 备份前正常退出，然后复制整个 Qidu 文件夹。
 Mac 与 Windows 当前各自保存书库，尚无跨设备同步或跨系统备份导入界面。
+
+下载页标为 Pre-release；0.1.9 继续作为 Windows 正式版提供下载。
+本包不支持 Intel Mac，也不是 Windows 或手机安装包。
+同一发布页提供 SHA256-0.2.0-preview.2.txt，包含安装包和说明文件的校验值。
+需要校验时，可在终端运行 shasum -a 256 后拖入 ZIP 文件，比较结果与校验文件。
 
 EPUB：支持无 DRM 的 EPUB 2/3 可重排文本、目录、封面及常见位图插图。
 复杂 CSS、内嵌字体、交互内容、音视频和固定版式不保证还原；不解密 DRM。

@@ -8,7 +8,7 @@
 
 **[下载 Windows 安装版](https://github.com/Ray0766/qidu-reader/releases/download/v0.1.9/TXT-Reader-0.1.9-Setup-x64.exe)** · [便携 ZIP](https://github.com/Ray0766/qidu-reader/releases/download/v0.1.9/TxtReader-0.1.9-win-x64.zip) · [所有版本](https://github.com/Ray0766/qidu-reader/releases)
 
-开发分支正在准备 **0.2.0 预览**：新增 EPUB 2/3 图文阅读、Windows 7 SP1／8.1 兼容构建，以及苹果 M 系列 Mac 界面。它们不是上面 0.1.9 安装包已有的功能；Mac 最低目标为 macOS 15，旧 Windows 的实机验证仍待完成。范围与验证状态见 [跨平台预览说明](docs/portability-preview.md)。
+**[0.2.0-preview.2 预览版下载](https://github.com/Ray0766/qidu-reader/releases/tag/v0.2.0-preview.2)**：新增 EPUB 2/3 图文阅读、Windows 7 SP1／8.1 兼容构建，以及苹果 M 系列 Mac 界面。预览版单独发布，0.1.9 继续保留为最新正式版。Mac 要求 macOS 15 及以上，尚未完成 Apple 正式签名和公证；旧 Windows 的实机验证仍待完成。文件选择、安装和数据保留说明见 [预览版发布说明](docs/releases/v0.2.0-preview.2.md)，完整验证边界见 [跨平台预览说明](docs/portability-preview.md)。
 
 Microsoft Store 申请已于 2026-10-25 提交认证，正式商店下载尚待上架后验证。
 
