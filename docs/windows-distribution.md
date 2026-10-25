@@ -1,6 +1,6 @@
 # Windows 安装与 GitHub 发布方式
 
-2026-10-25。正式名称为“栖读”；本地 EXE、便携目录和商店候选均为 0.1.9。MIT 开源许可已确定，GitHub 首次发布正在准备，商店申请已提交认证。
+2026-10-25。正式名称为“栖读”；本地 EXE、便携目录和商店候选均为 0.1.9。项目采用 MIT 开源许可，GitHub 仓库为 [Ray0766/qidu-reader](https://github.com/Ray0766/qidu-reader)，商店申请已提交认证。
 
 ## 产品是什么
 
@@ -14,7 +14,7 @@
 
 以下保留当前本地 EXE 试用渠道的步骤，尚未签名：
 
-1. 首个 GitHub Release 发布后，下载其中的 `TXT-Reader-0.1.9-Setup-x64.exe`。
+1. 从 [0.1.9 Release](https://github.com/Ray0766/qidu-reader/releases/tag/v0.1.9) 下载 `TXT-Reader-0.1.9-Setup-x64.exe`。
 2. 双击安装包，按中文向导安装；可选择桌面快捷方式。
 3. 打开栖读，点击“导入 TXT”或把小说文件拖入窗口，开始阅读。
 
@@ -32,13 +32,13 @@ GitHub 仓库保存源码；Releases 可以另附二进制文件。正式发布�
 - 升级、卸载均不删除该数据目录。重新安装后可继续阅读。卸载时保留数据属于当前产品约定。
 - 发布内容只包含应用、自带运行时、第三方许可和自有示例；私人小说、数据库、测试回执均排除。
 
-## 正式公开发布还需确定
+## 发布渠道与签名
 
-正式产品名称已确定为“栖读”，Microsoft Store 产品 ID 为 9PJM5L7JG8D1；账号由用户完成注册和验证。GitHub 登录账号为 Ray0766，MIT 许可已经确定，首个仓库及 Release 待完成公开发布。
+正式产品名称为“栖读”，Microsoft Store 产品 ID 为 9PJM5L7JG8D1。GitHub 仓库由 Ray0766 维护，采用 MIT 许可。
 
 当前自制 EXE 尚未做 Authenticode 代码签名。通过浏览器从互联网下载后，Windows 可能提示未知发布者或 SmartScreen 信誉不足。面向公众追求顺畅的安装体验，应配置可信代码签名，或走 Microsoft Store 的 MSIX 发布审核；新签名也不能保证立刻免除所有信誉提示。未购买证书；开发者账号已由用户注册，0.1.9 已提交商店认证。[Microsoft Windows 发布指南](https://learn.microsoft.com/en-us/windows/apps/package-and-deploy/publish-first-app)
 
-公开发布时需要上传已验证的 Setup EXE、便携 ZIP、SHA-256 校验值和版本说明，并把首页下载按钮链接到实际 Release 资源。本轮只生成本地交付物，不包含推送 GitHub 或创建公开 Release。
+GitHub Release 提供经过验证的 Setup EXE、便携 ZIP、SHA-256 校验值和版本说明。首页下载按钮指向 Release 文件；仓库源码和安装文件分开维护，私人小说和书库不进入公开提交。
 
 ## 代码签名选择：2026-10-25 核实
 
@@ -75,7 +75,7 @@ SignPath 提供免费开源签名，并以其基金会身份为可验证的源�
 
 0.1.9 源码回归 1,199 项通过，四张新版截图完成；独立 MSIX 测试包已完成包内首次使用、重开、1.0.9.0 → 1.0.10.0 覆盖升级及当前用户卸载重装。空书库和旧库副本迁移两条路径均保持进度、书签、设置及小说文件一致，跨阶段汇总 51 项检查通过，测试包已清理。完整范围以 [发布验证说明](validation.md) 为准；两测试版本使用同一程序载荷，正式商店下载尚未验证。WACK 总结 PASS、13 必检通过，另有一项可选进程启动扫描提示和元数据加载告警；现已提交认证。新包采用标准桌面隔离行为，没有声明 `unvirtualizedResources`。[数据隔离说明](https://learn.microsoft.com/en-us/windows/msix/desktop/desktop-to-uwp-behind-the-scenes)、[受限能力](https://learn.microsoft.com/en-us/windows/apps/package-and-deploy/app-capability-declarations)
 
-账号注册、名称预留和真实包身份已完成，产品 ID 为 `9PJM5L7JG8D1`。当前候选使用应用 0.1.9 / 包 1.0.9.0。Submission 1 已完成包、免费定价、属性／隐私正文、IARC、中文介绍／四张截图、权限理由和审核说明。用户重启后，断网干净 Windows 沙盒通过 34 项环境／生命周期及 35 项应用检查，正常启动和示例阅读也通过；随后于 2026-10-25 提交认证，后台进入预处理。审核通过后自动发布，真实 Store 下载验收仍待发布。GitHub 采用 MIT 许可，首个仓库正在准备。[包要求](https://learn.microsoft.com/en-us/windows/apps/publish/publish-your-app/msix/app-package-requirements)
+账号注册、名称预留和真实包身份已完成，产品 ID 为 `9PJM5L7JG8D1`。当前候选使用应用 0.1.9 / 包 1.0.9.0。Submission 1 已完成包、免费定价、属性／隐私正文、IARC、中文介绍／四张截图、权限理由和审核说明。用户重启后，断网干净 Windows 沙盒通过 34 项环境／生命周期及 35 项应用检查，正常启动和示例阅读也通过；随后于 2026-10-25 提交认证，后台进入预处理。审核通过后自动发布，真实 Store 下载验收仍待发布。GitHub 采用 MIT 许可，通过公开仓库与 Release 分发源码和直装包。[包要求](https://learn.microsoft.com/en-us/windows/apps/publish/publish-your-app/msix/app-package-requirements)
 
 0.1.9 将书库放在 `%USERPROFILE%\QiduLibrary`。MSIX 可能无法直接读取旧试用版 AppData；用户可重新导入 TXT，或先由新版未打包程序迁移到共享书库后再切到商店版。旧试用数据迁移不是新用户首次安装的前置条件。
 

@@ -6,13 +6,15 @@
 
 **当前版本 0.1.9 · Windows 11 x64 · MIT 开源许可**
 
-首个 GitHub 发布正在准备。Microsoft Store 申请已于 2026-10-25 提交认证，正式商店下载尚待上架后验证。
+**[下载 Windows 安装版](https://github.com/Ray0766/qidu-reader/releases/download/v0.1.9/TXT-Reader-0.1.9-Setup-x64.exe)** · [便携 ZIP](https://github.com/Ray0766/qidu-reader/releases/download/v0.1.9/TxtReader-0.1.9-win-x64.zip) · [所有版本](https://github.com/Ray0766/qidu-reader/releases)
+
+Microsoft Store 申请已于 2026-10-25 提交认证，正式商店下载尚待上架后验证。
 
 ![纸张双页阅读](installer/msix/store-materials/screenshots-v019/02-double-page.png)
 
 ## 下载与安装
 
-发布后的普通用户无需安装 .NET、SDK、Git 或 Visual Studio，也不用编译源码。
+普通用户下载上面的安装版或便携包，无需安装 .NET、SDK、Git 或 Visual Studio，也不用编译源码。
 
 | 文件 | 用途 |
 | --- | --- |
