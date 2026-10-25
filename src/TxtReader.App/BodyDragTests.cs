@@ -106,12 +106,26 @@ internal static class BodyDragTests
         {
             await window.SetReadingViewAsync(ReadingMode.Page, "double");
             await reader.NavigateAsync(5000, 2);
+            // With system animations disabled, a prepared release lands synchronously.
+            // Cancelling afterwards must preserve that committed page, not roll it back.
+            bool instantRelease = phase == "settling" && !SystemParameters.ClientAreaAnimation;
+            int expectedAnchor = 5000;
+            if (instantRelease)
+            {
+                reader.AnimationsEnabled = false;
+                await reader.TurnAsync(1);
+                expectedAnchor = reader.Anchor;
+                await reader.NavigateAsync(5000, 2);
+            }
             reader.AnimationsEnabled = true;
             Point start = At(.7, .5), end = Pull(start, 1, .8);
             reader.BeginPagePointer(start);
             reader.MovePagePointer(end);
             if (phase != "pending") await reader.WaitForDragPreviewAsync();
             Task settling = phase == "settling" ? reader.EndPagePointerAsync(end) : Task.CompletedTask;
+            if (instantRelease)
+                Check(settling.IsCompletedSuccessfully && reader.Anchor == expectedAnchor && !reader.CornerDragActive,
+                    "system animation disabled: prepared release commits before the next operation");
             switch (operation)
             {
                 case "cancel": reader.CancelPageDrag(); break;
@@ -123,8 +137,10 @@ internal static class BodyDragTests
             await settling;
             await reader.EndPagePointerAsync(end);
             await reader.FlushPendingInputAsync();
-            Check(reader.Anchor == 5000 && reader.Snapshot().AnchorVisible && !reader.IsBusy && !reader.AnimationLayerVisible,
-                phase + "/" + operation + " cancels without a late commit");
+            Check(reader.Anchor == expectedAnchor && reader.Snapshot().AnchorVisible && !reader.IsBusy && !reader.AnimationLayerVisible,
+                phase + "/" + operation + (instantRelease
+                    ? " preserves the completed page without a second commit"
+                    : " cancels without a late commit"));
         }
         reader.AnimationsEnabled = false;
         await window.SetReadingViewAsync(ReadingMode.Page, "double");
