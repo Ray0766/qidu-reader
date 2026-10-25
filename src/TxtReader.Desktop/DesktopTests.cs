@@ -2,6 +2,7 @@ using System.IO.Compression;
 using System.Text;
 using System.Text.Json;
 using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Threading;
@@ -77,6 +78,10 @@ internal static class DesktopTests
                 Check(reader.Anchor == offset && reader.AnchorVisible && reader.VisibleImages > 0, "EPUB image anchor survives all modes", new { view, offset, reader.VisibleImages });
             }
             window.Configure("page", 22, reader.Appearance with { PageLayout = "double", Theme = "white" }); reader.Navigate(0); await Settle(); Capture(window, Path.Combine(folder, "epub-reading.png"));
+            var chapters = window.FindControl<ListBox>("ChapterList")!;
+            var firstChapter = chapters.ContainerFromIndex(0);
+            double? chapterY = firstChapter?.TranslatePoint(default, chapters)?.Y;
+            Check(chapterY is >= 0 and < 12, "short EPUB contents reset the previous book's scroll layout", chapterY);
             if (MainWindow.Argument("--test-epub") is { } actual)
             {
                 await window.OpenFile(actual); await Settle();

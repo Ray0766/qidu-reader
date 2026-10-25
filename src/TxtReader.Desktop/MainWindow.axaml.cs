@@ -121,7 +121,15 @@ public partial class MainWindow : Window
         _bookPath = imported.Shelf.Path;
         Reader.Open(imported.Document, session?.Offset ?? 0, session?.Mode ?? Reader.Mode, session?.FontSize ?? Reader.ReadingFontSize, Store.ReadAppearance());
         BookTitle.Text = imported.Shelf.Title; Title = imported.Shelf.Title + " — 栖读";
-        _following = true; ChapterList.ItemsSource = imported.Document.Chapters; _following = false;
+        _following = true;
+        ChapterList.ItemsSource = null;
+        // Replacing a long virtualized list with a short EPUB table of contents
+        // must not retain the old panel's scroll anchor and leading space.
+        ChapterList.ItemsPanel = new FuncTemplate<Panel?>(() => imported.Document.Chapters.Count > 100
+            ? new VirtualizingStackPanel { VerticalAlignment = VerticalAlignment.Top }
+            : new StackPanel { VerticalAlignment = VerticalAlignment.Top });
+        ChapterList.ItemsSource = imported.Document.Chapters;
+        _following = false;
         ShowReading(); SyncControls(); RefreshBookmarks(); FollowChapter(); Save();
         Notice.Text = imported.Document.Warnings.Count > 0 ? string.Join("；", imported.Document.Warnings) : imported.Document.IsEpub ? "EPUB 图文阅读" : imported.Document.EncodingName;
         }
