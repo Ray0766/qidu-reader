@@ -6,9 +6,11 @@
 | --- | --- | --- |
 | Windows 现代版 | .NET 10 / WPF，Windows 11 x64 | 本机完整回归 1,190 项通过 |
 | Windows 兼容版 | Framework 4.8 / WPF，Windows 7 SP1、8.1、10、11，x64/x86 | 本机 Windows 11 + Framework 4.8.1：x64 1,231 项、x86 1,190 项通过；尚无 Win7/8.1 设备验收 |
-| Mac 预览 | .NET 10 / Avalonia，macOS 15+、苹果 M 系列 | Windows 共用界面与 macOS 15.7.9 arm64 原生环境均通过 52 项阅读和 3 项新进程检查；用户 Mac 的 Finder、文件选择器、触控板仍待试用 |
+| Mac 预览 | .NET 10 / Avalonia，macOS 15+、苹果 M 系列 | Windows 共用界面与 macOS 15.7.9 arm64 原生环境均通过 53 项阅读和 3 项新进程检查；用户 Mac 的 Finder、文件选择器、触控板仍待试用 |
 
 没有开发 Android 版，也不提供 Linux 或 Intel Mac 包。
+
+Mac 原生验证记录：[2026-10-25，应用源码 81dc5f0](https://github.com/Ray0766/qidu-reader/actions/runs/40180313112)。已包含从长目录切换到短 EPUB 目录的布局回归，并从最终 `.app` 再次检查续读。自动测试入口强制使用报告目录下的独立书库，拒绝操作日常书库。
 
 ## EPUB 范围
 
