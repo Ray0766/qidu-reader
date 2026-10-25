@@ -1,0 +1,26 @@
+**/bin/
+**/obj/
+.vs/
+.tools/
+.nuget/
+artifacts/
+dist/
+/TXT Reader/
+# Personal books placed at the project root are never source files.
+/*.txt
+*.pfx
+*.p12
+*.key
+.env
+.env.*
+*.user
+*.db
+*.db-shm
+*.db-wal
+installer/msix/store-identity.local.json
+# Local work journal and detailed machine-specific validation receipts.
+/docs/progress.md
+/docs/*-validation.md
+/installer/msix/store-materials/submission-notes.txt
+/installer/msix/store-materials/screenshots/
+/installer/msix/store-materials/screenshots-v016/

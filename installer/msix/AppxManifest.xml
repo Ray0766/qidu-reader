@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Package xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
+         xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
+         xmlns:uap10="http://schemas.microsoft.com/appx/manifest/uap/windows10/10"
+         xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
+         IgnorableNamespaces="uap uap10 rescap">
+  <!-- The build script supplies the exact identity assigned by Partner Center. -->
+  <Identity Name="REPLACE.WITH.STORE.IDENTITY" Publisher="CN=REPLACE-WITH-STORE-PUBLISHER"
+            Version="1.0.9.0" ProcessorArchitecture="x64" />
+  <Properties>
+    <DisplayName>栖读</DisplayName>
+    <PublisherDisplayName>REPLACE-WITH-STORE-PUBLISHER-DISPLAY-NAME</PublisherDisplayName>
+    <Description>离线中文 TXT 小说阅读器</Description>
+    <Logo>StoreAssets\StoreLogo.png</Logo>
+  </Properties>
+  <Resources><Resource Language="zh-CN" /></Resources>
+  <Dependencies>
+    <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.22000.0" MaxVersionTested="10.0.26200.0" />
+  </Dependencies>
+  <Applications>
+    <Application Id="Reader" Executable="TxtReader.exe"
+                 uap10:RuntimeBehavior="packagedClassicApp" uap10:TrustLevel="mediumIL">
+      <uap:VisualElements DisplayName="栖读" Description="离线中文 TXT 小说阅读器"
+                          Square150x150Logo="StoreAssets\Square150x150Logo.png"
+                          Square44x44Logo="StoreAssets\Square44x44Logo.png"
+                          BackgroundColor="transparent" />
+    </Application>
+  </Applications>
+  <Capabilities><rescap:Capability Name="runFullTrust" /></Capabilities>
+</Package>

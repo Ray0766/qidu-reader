@@ -1,0 +1,1 @@
+栖读是自带 .NET 10 运行时的离线 WPF/SQLite 桌面 TXT 阅读器，以 packagedClassicApp、mediumIL 运行。runFullTrust 用于原生窗口、读取用户主动选择的本地 TXT，以及在 %USERPROFILE%\QiduLibrary 保存书籍副本、阅读进度、书签和偏好，供更新与重装后接续。应用正常运行无需管理员权限，不安装服务、驱动或启动项，不执行外部命令，不上传书籍或阅读数据，无账号、广告、付费或在线书城。

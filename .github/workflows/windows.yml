@@ -1,0 +1,39 @@
+name: Windows build and reading checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: windows-2025
+    timeout-minutes: 20
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+      - name: Publish self-contained app
+        run: ./scripts/build.ps1 -Publish -OutputDirectory ./artifacts/ci-publish
+      - name: Verify reading and persistence with isolated samples
+        run: ./scripts/verify.ps1 -Executable ./artifacts/ci-publish/TxtReader.exe -ReportDirectory ./artifacts/ci-report
+      - name: Preserve verification report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: reading-checks
+          path: |
+            artifacts/ci-report/report.json
+            artifacts/ci-report/in-progress.json
+          if-no-files-found: ignore
+          retention-days: 14

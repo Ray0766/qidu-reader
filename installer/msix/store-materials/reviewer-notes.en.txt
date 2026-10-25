@@ -1,0 +1,11 @@
+Qidu (栖读) is a free, offline Windows 11 x64 TXT reader. No app account, subscription, payment, server, or test credentials are required. The MSIX includes the .NET 10 runtime; do not install an SDK. Normal use does not require administrator rights.
+
+Suggested test steps:
+1. Launch 栖读 from Start. On the empty bookshelf, select “先读示例” to open the bundled original Chinese sample 山海来信. Alternatively, import a local UTF-8 or GB18030 TXT file. The app does not distribute or download third-party novels.
+2. Read in single-page, double-page and scrolling modes. Use a click, Left/Right keys, or drag horizontally in the text to turn pages. A short drag returns to the current page; a longer drag completes the turn.
+3. Change font size and switch reading modes. The original text position remains visible after reflow. Try the chapter list, full-text search and bookmarks.
+4. Close and reopen the app, then continue the book from the shelf. Reading position, bookmarks and preferences are stored locally.
+
+Data is stored under %USERPROFILE%\QiduLibrary, outside package AppData, so updates and reinstallations can retain it. Uninstalling the app intentionally retains that folder; users may delete it to erase their local library. The app does not upload books or reading activity.
+
+runFullTrust supports the native WPF desktop UI, user-selected local files and per-user SQLite storage. No services, drivers or startup tasks are installed. Developer QA entry points are inactive during normal use. A QA focus-interruption probe can launch the same executable, which may appear in the optional WACK executable scan; it does not run an external tool during ordinary reading.
