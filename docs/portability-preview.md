@@ -6,7 +6,7 @@
 | --- | --- | --- |
 | Windows 现代版 | .NET 10 / WPF，Windows 11 x64 | 本机完整回归 1,190 项通过 |
 | Windows 兼容版 | Framework 4.8 / WPF，Windows 7 SP1、8.1、10、11，x64/x86 | 本机 Windows 11 + Framework 4.8.1：x64 1,231 项、x86 1,190 项通过；尚无 Win7/8.1 设备验收 |
-| Mac 预览 | .NET 10 / Avalonia，macOS 15+、苹果 M 系列 | 共用界面在 Windows 的 50 项阅读与 3 项新进程检查通过；原生 Mac 以 Actions 报告为准 |
+| Mac 预览 | .NET 10 / Avalonia，macOS 15+、苹果 M 系列 | Windows 共用界面与 macOS 15.7.9 arm64 原生环境均通过 52 项阅读和 3 项新进程检查；用户 Mac 的 Finder、文件选择器、触控板仍待试用 |
 
 没有开发 Android 版，也不提供 Linux 或 Intel Mac 包。
 
