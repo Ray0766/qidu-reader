@@ -344,6 +344,10 @@ internal sealed class ReaderView : Control, IDisposable
         }
         double target = leaf * (1 - 2 * _progress), radius = Math.Min(leaf * .075, leaf * _progress * .28);
         double fold = (leaf + target) / 2 - radius * Math.PI / 2;
+        double edge = origin + _direction * (fold + radius);
+        for (int shadow = 18; shadow >= 0; shadow--)
+            context.FillRectangle(new SolidColorBrush(Color.FromArgb((byte)(3 + (18 - shadow) * 2), 30, 25, 18)),
+                new Rect(_direction > 0 ? edge + shadow : edge - shadow - 1, paper.Top + 3, 1.2, paper.Height));
         double Map(double x)
         {
             double d = x - fold;
@@ -357,10 +361,20 @@ internal sealed class ReaderView : Control, IDisposable
             double sourceX = _direction > 0 ? origin + x : origin - end;
             double destX = _direction > 0 ? origin + Math.Min(a, b) : origin - Math.Max(a, b);
             var source = new Rect(sourceX, paper.Top, end - x, paper.Height);
-            var destination = new Rect(destX, paper.Top, Math.Max(.2, Math.Abs(b - a) + .35), paper.Height);
-            context.DrawImage(_before!, source, destination);
-            if (b < a) context.FillRectangle(new SolidColorBrush(Color.FromArgb(215, 238, 229, 206)), destination);
+            double angle = Math.Clamp((x - fold) / Math.Max(.001, radius), 0, Math.PI);
+            double lift = radius * (1 - Math.Cos(angle)) * .18;
+            var destination = new Rect(destX, paper.Top - lift, Math.Max(.2, Math.Abs(b - a) + .35), paper.Height + lift * 2);
+            if (b < a && Columns == 2)
+            {
+                // The reverse of the turning leaf is the new left page when
+                // going forward, or the new right page when going backward.
+                double backX = _direction > 0 ? paper.Left + leaf - end : paper.Center.X + x;
+                context.DrawImage(_after!, new Rect(backX, paper.Top, end - x, paper.Height), destination);
+            }
+            else context.DrawImage(_before!, source, destination);
+            if (b < a) context.FillRectangle(new SolidColorBrush(Color.FromArgb(Columns == 2 ? (byte)22 : (byte)215, 238, 229, 206)), destination);
             else if (x > fold) context.FillRectangle(new SolidColorBrush(Color.FromArgb((byte)(55 * Math.Min(1, (x - fold) / Math.Max(1, radius * Math.PI))), 35, 30, 20)), destination);
+            context.DrawLine(new Pen(new SolidColorBrush(Color.FromArgb(45, 70, 60, 42)), .6), destination.TopLeft, destination.TopRight);
         }
     }
     protected override void OnPointerPressed(PointerPressedEventArgs e)

@@ -50,6 +50,9 @@ internal static class DesktopTests
             int destination = reader.Destination(1);
             Check(reader.BeginDrag(1), "body drag prepares next spread"); reader.MoveDrag(25); reader.ReleaseDrag();
             Check(reader.Anchor == anchor, "short drag rebounds without saving preview");
+            Check(reader.BeginDrag(1), "curved leaf preview starts"); reader.MoveDrag(140);
+            await Settle(); Capture(window, Path.Combine(folder, "curved-leaf.png"));
+            Check(reader.Anchor == anchor, "drawing the curled leaf does not commit progress"); reader.CancelDrag();
             Check(reader.BeginDrag(1), "second drag starts"); reader.MoveDrag(280); reader.CancelDrag();
             Check(reader.Anchor == anchor, "canceled drag retains original offset");
             Check(reader.BeginDrag(1), "font change drag starts"); reader.MoveDrag(280);
